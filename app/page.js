@@ -4,18 +4,19 @@ const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",pas
 const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","胖胖箱"];
 const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
+function parseDriver(text){const t=text.replace(/：/g,":");return {name:match(t,[/(?:司機|姓名)[:\s]*([^\n]+)/]),phone:match(t,[/(?:電話|手機)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]),car:match(t,[/(?:車牌|車號|車型)[:\s]*([^\n]+)/]),license:/駕照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",registration:/行照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",insurance:/保險.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",blacklist:/黑名單.{0,5}(?:是|有|✓)/.test(t)?"是":"否"}}
 function parseTrip(text){
  const t=text.replace(/：/g,":").split(/\n+/).map(x=>x.trim()).filter(Boolean).join("\n"),o={...empty};
  o.date=match(t,[/(?:日期|用車日期|接送日期)[:\s]*([^\n]+)/i,/(20\d{2}[\/-]\d{1,2}[\/-]\d{1,2})/]);
  o.time=match(t,[/(?:時間|用車時間|接送時間)[:\s]*([^\n]+)/i,/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]);
  o.name=match(t,[/(?:姓名|客人|乘客姓名|聯絡人)[:\s]*([^\n]+)/]);
  o.phone=match(t,[/(?:電話|手機|聯絡電話)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]);
- o.pickup=match(t,[/(?:上車(?:地點|地址)?|接送地點|出發地|起點|住址)[:\s]*([^\n]+)/]);
- o.dropoff=match(t,[/(?:下車(?:地點|地址)?|目的地|終點)[:\s]*([^\n]+)/]);
- o.flight=match(t,[/(?:航班(?:號碼)?|班機(?:號碼)?)[:\s]*([A-Z]{1,3}\s?\d{2,4}|[^\n]+)/i,/\b([A-Z]{2,3}\s?\d{2,4})\b/i]);
+ o.pickup=match(t,[/(?:上車(?:地點|地址)?|接送地點|接人地點|出發地|起點|住址|地址)[:\s]*([^\n]+)/,/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]);
+ o.dropoff=match(t,[/(?:下車(?:地點|地址)?|送達地點|送往|目的地|終點)[:\s]*([^\n]+)/,/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]);
+ o.flight=match(t,[/(?:航班(?:號碼)?|班機(?:號碼)?|Flight)[:\s#]*([A-Z0-9]{2,3}[- ]?\d{2,4})/i,/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|ZE)[- ]?\d{2,4})\b/i,/\b([A-Z]{2,3}\d{2,4})\b/]);
  o.passengers=match(t,[/(?:人數|乘客人數)[:\s]*(\d+)/]);
- o.luggage=match(t,[/(?:托運行李|行李)[:\s]*([^\n]+)/]);
- o.carryOn=match(t,[/(?:手提行李|隨身行李)[:\s]*([^\n]+)/]);
+ o.luggage=match(t,[/(?:托運行李|大行李|行李箱|行李)[:\s]*([^\n]+)/,/(\d{2}\s*(?:吋|寸)\s*(?:[xX×*]\s*\d+|\d*\s*件)?)/,/(胖胖箱\s*(?:[xX×*]?\s*\d+)?)/]);
+ o.carryOn=match(t,[/(?:手提行李|隨身行李|手提|隨身)[:\s]*(\d+)/,/(\d+)\s*件?\s*(?:手提|隨身)/]);
  o.vehicle=match(t,[/(?:車型|車種)[:\s]*([^\n]+)/]);
  o.amount=match(t,[/(?:金額|車資|費用|價格)[:\s]*\$?\s*([\d,]+)/]);
  o.notes=match(t,[/(?:備註|其他)[:\s]*([^\n]+)/]);
@@ -25,7 +26,7 @@ function parseTrip(text){
  return o;
 }
 export default function Home(){
- const [raw,setRaw]=useState(""),[data,setData]=useState(empty),[status,setStatus]=useState("未派"),[trips,setTrips]=useState([]),[tab,setTab]=useState("總行程"),[editing,setEditing]=useState(null),[filters,setFilters]=useState({region:"",car:"",sort:"dateAsc"}),[drivers,setDrivers]=useState([]),[newDriver,setNewDriver]=useState({name:"",phone:"",car:"",license:"否",registration:"否",insurance:"否",blacklist:"否"});
+ const [raw,setRaw]=useState(""),[data,setData]=useState(empty),[status,setStatus]=useState("未派"),[trips,setTrips]=useState([]),[tab,setTab]=useState("總行程"),[editing,setEditing]=useState(null),[pasteMode,setPasteMode]=useState("車趟"),[filters,setFilters]=useState({region:"",car:"",sort:"dateAsc"}),[drivers,setDrivers]=useState([]),[newDriver,setNewDriver]=useState({name:"",phone:"",car:"",license:"否",registration:"否",insurance:"否",blacklist:"否"});
  useEffect(()=>{try{setTrips(JSON.parse(localStorage.getItem("gdTrips")||"[]"));setDrivers(JSON.parse(localStorage.getItem("gdDrivers")||"[]"))}catch{}},[]);
  const persist=n=>{setTrips(n);localStorage.setItem("gdTrips",JSON.stringify(n))};
  const save=()=>{const item={...data,baseAmount:data.amount,amount:String(finalFare),surcharge:String(extraFare),status,id:editing||Date.now()};const n=editing?trips.map(t=>t.id===editing?item:t):[item,...trips];persist(n);setRaw("");setData(empty);setEditing(null)};
@@ -44,9 +45,9 @@ export default function Home(){
  const monthly=trips.reduce((m,t)=>{const k=(t.date||"未填日期").slice(0,7);m[k]=(m[k]||0)+(Number(t.amount)||0);return m},{});
  const field=(k,l,type="text")=><label style={{display:"grid",gap:5}}><b>{l}</b><input type={type} value={data[k]} onChange={e=>setData({...data,[k]:e.target.value})} style={inp}/></label>;
  return <main style={{maxWidth:980,margin:"20px auto",padding:16,fontFamily:"system-ui"}}>
-  <h1>GD 車趟管理 <small style={{fontSize:14}}>v1.8</small></h1>
+  <h1>GD 車趟管理 <small style={{fontSize:14}}>v1.9</small></h1>
   <nav style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>{["總行程","已接","已派","未派"].map(x=><button onClick={()=>setTab(x)} style={btn(tab===x)}>{x} ({x==="總行程"?trips.length:trips.filter(t=>t.status===x).length})</button>)}</nav>
-  <section style={card}><h2>智慧貼單</h2><textarea value={raw} onChange={e=>setRaw(e.target.value)} placeholder="貼上 LINE／客戶完整車趟資料…" style={{...inp,width:"100%",height:150}}/><button onClick={()=>setData(parseTrip(raw))} style={{...btn(true),marginTop:10}}>自動分析填入</button></section>
+  <section style={card}><h2>智慧貼單 v2</h2><div style={{display:"flex",gap:8,marginBottom:8}}>{["車趟","司機"].map(x=><button key={x} onClick={()=>setPasteMode(x)} style={btn(pasteMode===x)}>{x}資料</button>)}</div><textarea value={raw} onChange={e=>setRaw(e.target.value)} placeholder="貼上 LINE／客戶完整車趟資料…" style={{...inp,width:"100%",height:150}}/><button onClick={()=>{if(pasteMode==="車趟")setData({...data,...parseTrip(raw)});else setNewDriver({...newDriver,...parseDriver(raw)})}} style={{...btn(true),marginTop:10}}>自動分析填入</button><div style={{fontSize:13,marginTop:8}}>可辨識：完整地址、航班代碼、28吋×2、胖胖箱、手提行李件數，以及司機姓名／電話／車牌／三證。</div></section>
   <section style={card}><h2>新增／確認車趟</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12}}>
    {field("date","日期","date")}{field("time","時間","time")}
    <label><b>服務類型</b><select value={data.service} onChange={e=>setData({...data,service:e.target.value})} style={inp}>{["機場接送","接機","送機","包車旅遊","登山接駁","單車補給"].map(x=><option key={x}>{x}</option>)}</select></label>
