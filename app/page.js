@@ -59,7 +59,10 @@ export default function Home(){
  const unpaid=trips.filter(t=>t.payment!=="已收").reduce((s,t)=>s+(Number(String(t.amount||0).replace(/,/g,""))||0),0);
  const pendingReturn=trips.filter(t=>t.returnMoney!=="已回金").reduce((s,t)=>s+(Number(String(t.amount||0).replace(/,/g,""))||0),0);
  const visible=(tab==="總行程"?trips:trips.filter(x=>x.status===tab)).filter(x=>(!filters.region||x.region===filters.region)&&(!filters.car||x.carClass===filters.car)).sort((a,b)=>{if(filters.sort==="amountDesc")return (Number(b.amount)||0)-(Number(a.amount)||0);if(filters.sort==="amountAsc")return (Number(a.amount)||0)-(Number(b.amount)||0);const A=(a.date||"")+" "+(a.time||""),B=(b.date||"")+" "+(b.time||"");return filters.sort==="dateDesc"?B.localeCompare(A):A.localeCompare(B)});
- const monthly=trips.reduce((m,t)=>{const k=(t.date||"未填日期").slice(0,7);m[k]=(m[k]||0)+(Number(t.amount)||0);return m},{});\n const completedTrips=trips.filter(t=>t.status==="已完成");\n const completedMonths=[...new Set(completedTrips.map(t=>(t.date||"未填日期").slice(0,7)))].sort().reverse();\n const completedVisible=completedTrips.filter(t=>!completedMonth||(t.date||"未填日期").slice(0,7)===completedMonth).sort((a,b)=>((b.date||"")+" "+(b.time||"")).localeCompare((a.date||"")+" "+(a.time||"")));
+ const monthly=trips.reduce((m,t)=>{const k=(t.date||"未填日期").slice(0,7);m[k]=(m[k]||0)+(Number(t.amount)||0);return m},{});
+ const completedTrips=trips.filter(t=>t.status==="已完成");
+ const completedMonths=[...new Set(completedTrips.map(t=>(t.date||"未填日期").slice(0,7)))].sort().reverse();
+ const completedVisible=completedTrips.filter(t=>!completedMonth||(t.date||"未填日期").slice(0,7)===completedMonth).sort((a,b)=>((b.date||"")+" "+(b.time||"")).localeCompare((a.date||"")+" "+(a.time||"")));
  const field=(k,l,type="text")=><label style={{display:"grid",gap:5}}><b>{l}</b><input type={type} value={data[k]} onChange={e=>setData({...data,[k]:e.target.value})} style={inp}/></label>;
  return <main style={{maxWidth:980,margin:"20px auto",padding:16,fontFamily:"system-ui"}}>
   <h1>GD 車趟管理 <small style={{fontSize:14}}>v2.0</small></h1>
