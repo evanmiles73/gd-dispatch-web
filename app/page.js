@@ -64,8 +64,8 @@ export default function Home(){
  const completedMonths=[...new Set(completedTrips.map(t=>(t.date||"未填日期").slice(0,7)))].sort().reverse();
  const completedVisible=completedTrips.filter(t=>!completedMonth||(t.date||"未填日期").slice(0,7)===completedMonth).sort((a,b)=>((b.date||"")+" "+(b.time||"")).localeCompare((a.date||"")+" "+(a.time||"")));
  const field=(k,l,type="text")=><label style={{display:"grid",gap:5}}><b>{l}</b><input type={type} value={data[k]} onChange={e=>setData({...data,[k]:e.target.value})} style={inp}/></label>;
- return <main style={{maxWidth:980,margin:"20px auto",padding:16,fontFamily:"system-ui"}}>
-  <h1>GD 車趟管理 <small style={{fontSize:14}}>v2.0</small></h1>
+ return <main style={{maxWidth:980,margin:"0 auto",padding:"28px 16px 110px",fontFamily:"system-ui",background:"#f4f7f3",minHeight:"100vh",color:"#16231d"}}>
+  <div style={{letterSpacing:5,fontSize:12,color:"#748078",marginBottom:10}}>GD OPERATIONS</div><h1 style={{margin:"0 0 18px",fontSize:"clamp(30px,7vw,46px)",fontWeight:500}}>所有車趟總行程</h1>
   {showStatusPicker&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:99,display:"grid",placeItems:"center",padding:20}}><div style={{background:"#fff",borderRadius:16,padding:20,width:"min(520px,100%)",boxShadow:"0 12px 40px rgba(0,0,0,.25)"}}><h2 style={{marginTop:0}}>資料解析完成</h2><p>請選擇這筆車趟要歸到哪個狀態：</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{["未派","已派","已接","已完成"].map(x=><button key={x} onClick={()=>{setStatus(x);setShowStatusPicker(false)}} style={{...btn(status===x),padding:16,fontSize:18}}>{x}</button>)}</div><button onClick={()=>setShowStatusPicker(false)} style={{...btn(false),width:"100%",marginTop:10}}>稍後再選</button></div></div>}
   <div style={{background:"#fff",padding:"8px 0",borderBottom:"1px solid #eee",marginBottom:12}}><nav style={{display:"flex",gap:8,overflowX:"auto",whiteSpace:"nowrap"}}>{["總行程","已接","已派","未派","已完成"].map(x=><button onClick={()=>setTab(x)} style={btn(tab===x)}>{x} ({x==="總行程"?trips.length:trips.filter(t=>t.status===x).length})</button>)}</nav></div>
   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}><button onClick={()=>{setShowForm(!showForm);setPasteMode("車趟")}} style={{...btn(true),fontSize:17,padding:14}}>＋ 新增車趟</button><button onClick={()=>{setShowForm(true);setPasteMode("司機")}} style={{...btn(false),fontSize:17,padding:14}}>＋ 新增司機</button></div>
@@ -97,6 +97,6 @@ export default function Home(){
 
  </main>
 }
-const inp={padding:12,fontSize:16,border:"1px solid #bbb",borderRadius:8,boxSizing:"border-box",width:"100%"};
-const card={padding:14,border:"1px solid #ddd",borderRadius:14,marginBottom:14,background:"#fff"};
-const btn=a=>({padding:"11px 16px",borderRadius:8,border:"1px solid #aaa",fontSize:15,fontWeight:a?700:400,cursor:"pointer"});
+const inp={padding:14,fontSize:16,border:"1px solid #cbd5ce",borderRadius:14,boxSizing:"border-box",width:"100%",background:"#f7f9f7",color:"#16231d"};
+const card={padding:20,border:"1px solid #d8e1da",borderRadius:24,marginBottom:18,background:"#fff",boxShadow:"0 8px 28px rgba(31,74,55,.04)"};
+const btn=a=>({padding:"12px 16px",borderRadius:14,border:"1px solid "+(a?"#1f6046":"#cbd5ce"),fontSize:15,fontWeight:a?700:500,cursor:"pointer",background:a?"#1f6046":"#fff",color:a?"#fff":"#526159"});
