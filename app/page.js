@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
-const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",passengers:"",luggage:"",carryOn:"",vehicle:"",amount:"",notes:"",driver:"",driverPhone:"",payment:"未收",returnMoney:"待回金",region:"",carClass:"",service:"機場接送",childSeat:"0",booster:"0"};
+const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",passengers:"",luggage:"",carryOn:"",vehicle:"",amount:"",notes:"",driver:"",driverPhone:"",payment:"未收",returnMoney:"待回金",region:"",carClass:"",service:"機場接送",childSeat:"0",booster:"0",airport:"",extraStops:""};
 const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","胖胖箱"];
 const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
@@ -19,6 +19,8 @@ function parseTrip(text){
  o.vehicle=match(t,[/(?:車型|車種)[:\s]*([^\n]+)/]);
  o.amount=match(t,[/(?:金額|車資|費用|價格)[:\s]*\$?\s*([\d,]+)/]);
  o.notes=match(t,[/(?:備註|其他)[:\s]*([^\n]+)/]);
+ o.airport=match(t,[/(桃園(?:機場)?\s*T?[123]|松山(?:機場)?|清泉崗(?:機場)?|台中(?:機場)?|台南(?:機場)?|小港(?:機場)?|高雄(?:機場)?)/i]);
+ const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)[:\s]*([^\n]+)/g); if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
  if(!o.pickup||!o.dropoff){const m=t.match(/([^\n]{4,})\s*(?:→|->|➡️?)\s*([^\n]{4,})/);if(m){o.pickup||=clean(m[1]);o.dropoff||=clean(m[2])}}
  return o;
 }
@@ -39,14 +41,15 @@ export default function Home(){
  const visible=tab==="總行程"?trips:trips.filter(x=>x.status===tab);
  const field=(k,l,type="text")=><label style={{display:"grid",gap:5}}><b>{l}</b><input type={type} value={data[k]} onChange={e=>setData({...data,[k]:e.target.value})} style={inp}/></label>;
  return <main style={{maxWidth:980,margin:"20px auto",padding:16,fontFamily:"system-ui"}}>
-  <h1>GD 車趟管理 <small style={{fontSize:14}}>v1.4</small></h1>
+  <h1>GD 車趟管理 <small style={{fontSize:14}}>v1.5</small></h1>
   <nav style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>{["總行程","已接","已派","未派"].map(x=><button onClick={()=>setTab(x)} style={btn(tab===x)}>{x} ({x==="總行程"?trips.length:trips.filter(t=>t.status===x).length})</button>)}</nav>
   <section style={card}><h2>智慧貼單</h2><textarea value={raw} onChange={e=>setRaw(e.target.value)} placeholder="貼上 LINE／客戶完整車趟資料…" style={{...inp,width:"100%",height:150}}/><button onClick={()=>setData(parseTrip(raw))} style={{...btn(true),marginTop:10}}>自動分析填入</button></section>
   <section style={card}><h2>新增／確認車趟</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:12}}>
    {field("date","日期","date")}{field("time","時間","time")}
    <label><b>服務類型</b><select value={data.service} onChange={e=>setData({...data,service:e.target.value})} style={inp}>{["機場接送","接機","送機","包車旅遊","登山接駁","單車補給"].map(x=><option key={x}>{x}</option>)}</select></label>
    <label><b>地區</b><select value={data.region} onChange={e=>setData({...data,region:e.target.value})} style={inp}><option value="">請選擇</option>{["台北","新北","基隆","桃園","新竹","苗栗","台中","彰化","南投","雲林","嘉義","台南","高雄","屏東","宜蘭","花蓮","台東","澎湖","金門","連江"].map(x=><option key={x}>{x}</option>)}</select></label>
-   <label><b>車型分類</b><select value={data.carClass} onChange={e=>setData({...data,carClass:e.target.value})} style={inp}><option value="">請選擇</option>{["轎車","小車","大車","正七","假七","九人座"].map(x=><option key={x}>{x}</option>)}</select></label>{field("name","客人姓名")}{field("phone","電話")}{field("pickup","上車完整住址")}{field("dropoff","下車完整住址")}{field("flight","航班")}{field("passengers","人數","number")}
+   <label><b>固定航點</b><select value={data.airport} onChange={e=>setData({...data,airport:e.target.value})} style={inp}><option value="">請選擇</option>{["桃園T1","桃園T2","桃園T3","松山機場","清泉崗機場","台南機場","小港機場"].map(x=><option key={x}>{x}</option>)}</select></label>
+   <label><b>車型分類</b><select value={data.carClass} onChange={e=>setData({...data,carClass:e.target.value})} style={inp}><option value="">請選擇</option>{["轎車","小車","大車","正七","假七","九人座"].map(x=><option key={x}>{x}</option>)}</select></label>{field("name","客人姓名")}{field("phone","電話")}{field("pickup","上車完整住址")}{field("dropoff","下車完整住址")}{field("extraStops","多點上下車／中途停靠")}{field("flight","航班")}{field("passengers","人數","number")}
    <label><b>行李</b><select value={data.luggage} onChange={e=>setData({...data,luggage:e.target.value})} style={inp}><option value="">請選擇／可手動修改</option>{sizes.map(x=><option>{x}</option>)}</select></label>
    {field("carryOn","手提行李（件數）","number")}{field("vehicle","車型")}{field("amount","金額","number")}
    <label><b>派單司機</b><select onChange={pickDriver} style={inp}><option value="">從司機資料庫選擇</option>{drivers.map(d=><option key={d.id} value={d.id}>{d.name}｜{d.car||"未填車型"}</option>)}</select></label>
@@ -58,7 +61,7 @@ export default function Home(){
   </div><div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>{["已派","未派","已接"].map(x=><button onClick={()=>setStatus(x)} style={btn(status===x)}>{x}</button>)}<button onClick={save} style={{...btn(true),marginLeft:"auto"}}>{editing?"更新車趟":"儲存車趟"}</button></div></section>
   <section style={card}><h2>帳務摘要</h2><div style={{display:"flex",gap:20,flexWrap:"wrap"}}><b>應收：$ {total.toLocaleString()}</b><b>未收：$ {unpaid.toLocaleString()}</b><b>待轉回金：$ {pendingReturn.toLocaleString()}</b></div></section>
   <section style={card}><h2>司機資料庫</h2><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}><input placeholder="司機姓名" value={newDriver.name} onChange={e=>setNewDriver({...newDriver,name:e.target.value})} style={inp}/><input placeholder="電話" value={newDriver.phone} onChange={e=>setNewDriver({...newDriver,phone:e.target.value})} style={inp}/><input placeholder="車型／車牌" value={newDriver.car} onChange={e=>setNewDriver({...newDriver,car:e.target.value})} style={inp}/><button onClick={addDriver} style={btn(true)}>新增司機</button></div>{drivers.map(d=><div key={d.id} style={{padding:"8px 0",borderTop:"1px solid #eee"}}>{d.name}｜{d.phone||"-"}｜{d.car||"-"} <button onClick={()=>saveDrivers(drivers.filter(x=>x.id!==d.id))}>刪除</button></div>)}</section>
-  <section style={card}><h2>{tab}</h2>{visible.length===0?<p>目前沒有資料</p>:visible.map(t=><div key={t.id} style={{borderTop:"1px solid #ddd",padding:"12px 0"}}><b>{t.date} {t.time}｜{t.name||"未填姓名"}｜{t.status}</b><div><a href={mapUrl(t.pickup)} target="_blank">📍 {t.pickup||"未填上車地"}</a> → <a href={mapUrl(t.dropoff)} target="_blank">📍 {t.dropoff||"未填下車地"}</a></div><div>類型：{t.service||"-"}　地區：{t.region||"-"}　車型：{t.carClass||t.vehicle||"-"}<br/>航班：{t.flight||"-"}　行李：{t.luggage||"-"}　手提：{t.carryOn||"-"}　安全座椅：{t.childSeat||0}　增高墊：{t.booster||0}　金額：{t.amount||"-"}　收款：{t.payment||"未收"}　回金：{t.returnMoney||"待回金"}</div><div>司機：{t.driver||"未派"} {t.driverPhone||""}</div><div style={{display:"flex",gap:8,marginTop:8}}><button onClick={()=>edit(t)} style={btn(false)}>編輯</button><button onClick={()=>remove(t.id)} style={btn(false)}>刪除</button></div></div>)}</section>
+  <section style={card}><h2>{tab}</h2>{visible.length===0?<p>目前沒有資料</p>:visible.map(t=><div key={t.id} style={{borderTop:"1px solid #ddd",padding:"12px 0"}}><b>{t.date} {t.time}｜{t.name||"未填姓名"}｜{t.status}</b><div><a href={mapUrl(t.pickup)} target="_blank">📍 {t.pickup||"未填上車地"}</a> → <a href={mapUrl(t.dropoff)} target="_blank">📍 {t.dropoff||"未填下車地"}</a></div><div>類型：{t.service||"-"}　地區：{t.region||"-"}　航點：{t.airport||"-"}　車型：{t.carClass||t.vehicle||"-"}<br/>航班：{t.flight||"-"}　多點：{t.extraStops||"-"}<br/>行李：{t.luggage||"-"}　手提：{t.carryOn||"-"}　安全座椅：{t.childSeat||0}　增高墊：{t.booster||0}　金額：{t.amount||"-"}　收款：{t.payment||"未收"}　回金：{t.returnMoney||"待回金"}</div><div>司機：{t.driver||"未派"} {t.driverPhone||""}</div><div style={{display:"flex",gap:8,marginTop:8}}><button onClick={()=>edit(t)} style={btn(false)}>編輯</button><button onClick={()=>remove(t.id)} style={btn(false)}>刪除</button></div></div>)}</section>
  </main>
 }
 const inp={padding:10,fontSize:16,border:"1px solid #bbb",borderRadius:8,boxSizing:"border-box",width:"100%"};
