@@ -29,7 +29,14 @@ function parseTrip(text){
  o.vehicle=val(["車型","車種"]);
  o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");
  o.notes=val(["備註","其他"]);
- o.airport=match(t,[/(桃園(?:機場)?\s*T?[123]|松山(?:機場)?|清泉崗(?:機場)?|台中(?:機場)?|台南(?:機場)?|小港(?:機場)?|高雄(?:機場)?)/i]);
+ const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n");
+ if(/桃園(?:國際)?機場.*(?:第一航廈|第1航廈|一航廈|T1)|(?:第一航廈|第1航廈|一航廈|T1).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T1";
+ else if(/桃園(?:國際)?機場.*(?:第二航廈|第2航廈|二航廈|T2)|(?:第二航廈|第2航廈|二航廈|T2).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T2";
+ else if(/桃園(?:國際)?機場.*(?:第三航廈|第3航廈|三航廈|T3)|(?:第三航廈|第3航廈|三航廈|T3).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T3";
+ else if(/松山(?:機場)?/i.test(airportText))o.airport="松山機場";
+ else if(/(?:清泉崗|台中)(?:機場)?/i.test(airportText))o.airport="清泉崗機場";
+ else if(/台南(?:機場)?/i.test(airportText))o.airport="台南機場";
+ else if(/(?:小港|高雄)(?:機場)?/i.test(airportText))o.airport="小港機場";
  const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)\s*[:：]?\s*([^\n]+)/g);if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
  if(!o.pickup||!o.dropoff){const m=t.match(/([^\n]{4,})\s*(?:→|->|➡️?)\s*([^\n]{4,})/);if(m){o.pickup||=clean(m[1]);o.dropoff||=clean(m[2])}}
  const regionHit=(o.pickup||"").match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)(?:市|縣)?/);if(regionHit)o.region=regionHit[1];
