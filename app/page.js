@@ -29,7 +29,7 @@ function parseTrip(text){
  o.vehicle=val(["車型","車種"]);
  o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");
  o.notes=val(["備註","其他"]);
- const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n");
+ const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n").normalize("NFKC").replace(/\s+/g,"");
  if(/桃園(?:國際)?機場.*(?:第一航廈|第1航廈|一航廈|T1)|(?:第一航廈|第1航廈|一航廈|T1).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T1";
  else if(/桃園(?:國際)?機場.*(?:第二航廈|第2航廈|二航廈|T2)|(?:第二航廈|第2航廈|二航廈|T2).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T2";
  else if(/桃園(?:國際)?機場.*(?:第三航廈|第3航廈|三航廈|T3)|(?:第三航廈|第3航廈|三航廈|T3).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T3";
