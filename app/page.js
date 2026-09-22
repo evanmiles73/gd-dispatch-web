@@ -23,8 +23,8 @@ function parseTrip(text){
  o.flight=flightCode+(flightTime?" / "+flightTime:"");
  o.passengers=match(t,[/(?:人數|乘客人數)\s*[:：]?\s*(\d+)/]);
  const luggageRaw=val(["托運行李","大行李","行李箱","行李"]);
- if(luggageRaw){const sz=match(luggageRaw,[/(32|30|28|26|24|22|20)\s*(?:吋|寸)/,/(胖胖箱)/]);const qty=match(luggageRaw,[/(?:[xX×*]\s*|共?\s*)(\d+)\s*件?/,/(\d+)\s*件/]);o.luggage=sz?sz+(sz==="胖胖箱"?"":"吋")+(qty?" × "+qty:""):clean(luggageRaw)}
- else o.luggage=match(t,[/((?:32|30|28|26|24|22|20)\s*(?:吋|寸)(?:\s*[xX×*]\s*\d+|\s*\d+\s*件)?)/,/(胖胖箱(?:\s*[xX×*]?\s*\d+)?)/]);
+ const parseLuggage=(s="")=>{const items=[];const re=/((?:32|30|28|26|24|22|20)\s*(?:吋|寸)|胖胖箱(?:\s*(?:32|30|28|26|24|22|20)\s*(?:吋|寸))?)\s*(?:(?:[xX×*]\s*)?(\d+)\s*件|[xX×*]\s*(\d+))?/g;let m;while((m=re.exec(s))){const size=m[1].replace(/寸/g,"吋").replace(/\s/g,"");const qty=m[2]||m[3]||"1";items.push(`${size} × ${qty}`)}return items.join("｜")};
+ o.luggage=parseLuggage(luggageRaw||t);
  const carry=val(["手提行李","隨身行李","手提","隨身"]);o.carryOn=carry?match(carry,[/(\d+)\s*件?/]):match(t,[/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
  o.vehicle=val(["車型","車種"]);
  o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");
