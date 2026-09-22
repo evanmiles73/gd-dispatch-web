@@ -6,23 +6,33 @@ const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
 function parseDriver(text){const t=text.replace(/：/g,":");return {name:match(t,[/(?:司機|姓名)[:\s]*([^\n]+)/]),phone:match(t,[/(?:電話|手機)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]),car:match(t,[/(?:車牌|車號|車型)[:\s]*([^\n]+)/]),license:/駕照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",registration:/行照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",insurance:/保險.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",blacklist:/黑名單.{0,5}(?:是|有|✓)/.test(t)?"是":"否"}}
 function parseTrip(text){
- const t=text.replace(/：/g,":").split(/\n+/).map(x=>x.trim()).filter(Boolean).join("\n"),o={...empty};
- o.date=match(t,[/(?:日期|用車日期|接送日期)[:\s]*([^\n]+)/i,/(20\d{2}[\/-]\d{1,2}[\/-]\d{1,2})/]);
- o.time=match(t,[/(?:時間|用車時間|接送時間)[:\s]*([^\n]+)/i,/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]);
- o.name=match(t,[/(?:姓名|客人|乘客姓名|聯絡人)[:\s]*([^\n]+)/]);
- o.phone=match(t,[/(?:電話|手機|聯絡電話)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]);
- o.pickup=match(t,[/(?:上車(?:地點|地址)?|接送地點|接人地點|出發地|起點|住址|地址)[:\s]*([^\n]+)/,/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]);
- o.dropoff=match(t,[/(?:下車(?:地點|地址)?|送達地點|送往|目的地|終點)[:\s]*([^\n]+)/,/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]);
- o.flight=match(t,[/(?:航班(?:號碼)?|班機(?:號碼)?|Flight)[:\s#]*([A-Z0-9]{2,3}[- ]?\d{2,4})/i,/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|ZE)[- ]?\d{2,4})\b/i,/\b([A-Z]{2,3}\d{2,4})\b/]);
- o.passengers=match(t,[/(?:人數|乘客人數)[:\s]*(\d+)/]);
- o.luggage=match(t,[/(?:托運行李|大行李|行李箱|行李)[:\s]*([^\n]+)/,/(\d{2}\s*(?:吋|寸)\s*(?:[xX×*]\s*\d+|\d*\s*件)?)/,/(胖胖箱\s*(?:[xX×*]?\s*\d+)?)/]);
- o.carryOn=match(t,[/(?:手提行李|隨身行李|手提|隨身)[:\s]*(\d+)/,/(\d+)\s*件?\s*(?:手提|隨身)/]);
- o.vehicle=match(t,[/(?:車型|車種)[:\s]*([^\n]+)/]);
- o.amount=match(t,[/(?:金額|車資|費用|價格)[:\s]*\$?\s*([\d,]+)/]);
- o.notes=match(t,[/(?:備註|其他)[:\s]*([^\n]+)/]);
+ const raw=text.replace(/：/g,":").replace(/\r/g,""),lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean),t=lines.join("\n"),o={...empty};
+ const val=(labels)=>{for(const line of lines){for(const label of labels){const re=new RegExp("^\\s*"+label+"\\s*[:：]?\\s*(.+)$","i"),m=line.match(re);if(m?.[1])return clean(m[1])}}return ""};
+ const dateRaw=val(["日期","用車日期","接送日期"])||match(t,[/\b(20\d{2}[\/-]\d{1,2}[\/-]\d{1,2})\b/,/\b(\d{1,2}[\/-]\d{1,2})\b/]);
+ if(dateRaw){const nums=dateRaw.match(/\d+/g)||[];if(nums.length>=3)o.date=`${nums[0].padStart(4,"0")}-${nums[1].padStart(2,"0")}-${nums[2].padStart(2,"0")}`;else if(nums.length===2){const y=new Date().getFullYear();o.date=`${y}-${nums[0].padStart(2,"0")}-${nums[1].padStart(2,"0")}`}}
+ const timeRaw=val(["時間","用車時間","接送時間","上車時間"])||match(t,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]);
+ const tm=timeRaw.match(/(?:上午|下午|早上|晚上)?\s*(\d{1,2})[:：](\d{2})/);
+ if(tm){let h=Number(tm[1]);if(/下午|晚上/.test(timeRaw)&&h<12)h+=12;if(/上午|早上/.test(timeRaw)&&h===12)h=0;o.time=String(h).padStart(2,"0")+":"+tm[2]}
+ o.name=clean(val(["客人姓名","乘客姓名","聯絡人","客人","姓名"]).replace(/\s*(?:電話|手機|聯絡電話)\s*[:：].*$/,""));
+ o.phone=match(t,[/(?:電話|手機|聯絡電話)\s*[:：]?\s*(09\d{2}[- ]?\d{3}[- ]?\d{3})/i,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]).replace(/[- ]/g,"");
+ o.pickup=val(["上車地點","上車地址","上車","接送地點","接人地點","出發地","起點","住址","地址"])||match(t,[/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]);
+ o.dropoff=val(["下車地點","下車地址","下車","送達地點","送往","目的地","終點"])||match(t,[/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]);
+ const flightLine=val(["航班資訊","航班號碼","航班","班機號碼","班機","Flight"]);
+ const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX)[- ]?\d{2,4})\b/i,/\b([A-Z]{2,3}\d{2,4})\b/]);
+ const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
+ o.flight=flightCode+(flightTime?" / "+flightTime:"");
+ o.passengers=match(t,[/(?:人數|乘客人數)\s*[:：]?\s*(\d+)/]);
+ const luggageRaw=val(["托運行李","大行李","行李箱","行李"]);
+ if(luggageRaw){const sz=match(luggageRaw,[/(32|30|28|26|24|22|20)\s*(?:吋|寸)/,/(胖胖箱)/]);const qty=match(luggageRaw,[/(?:[xX×*]\s*|共?\s*)(\d+)\s*件?/,/(\d+)\s*件/]);o.luggage=sz?sz+(sz==="胖胖箱"?"":"吋")+(qty?" × "+qty:""):clean(luggageRaw)}
+ else o.luggage=match(t,[/((?:32|30|28|26|24|22|20)\s*(?:吋|寸)(?:\s*[xX×*]\s*\d+|\s*\d+\s*件)?)/,/(胖胖箱(?:\s*[xX×*]?\s*\d+)?)/]);
+ const carry=val(["手提行李","隨身行李","手提","隨身"]);o.carryOn=match(carry||t,[/(\d+)\s*件?/,/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
+ o.vehicle=val(["車型","車種"]);
+ o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");
+ o.notes=val(["備註","其他"]);
  o.airport=match(t,[/(桃園(?:機場)?\s*T?[123]|松山(?:機場)?|清泉崗(?:機場)?|台中(?:機場)?|台南(?:機場)?|小港(?:機場)?|高雄(?:機場)?)/i]);
- const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)[:\s]*([^\n]+)/g); if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
+ const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)\s*[:：]?\s*([^\n]+)/g);if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
  if(!o.pickup||!o.dropoff){const m=t.match(/([^\n]{4,})\s*(?:→|->|➡️?)\s*([^\n]{4,})/);if(m){o.pickup||=clean(m[1]);o.dropoff||=clean(m[2])}}
+ const regionHit=(o.pickup||"").match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)(?:市|縣)?/);if(regionHit)o.region=regionHit[1];
  return o;
 }
 export default function Home(){
