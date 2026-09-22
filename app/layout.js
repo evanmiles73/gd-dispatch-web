@@ -1,0 +1,1 @@
+export const metadata={title:"GD 車趟管理"};export default function RootLayout({children}){return <html lang="zh-Hant"><body>{children}</body></html>}
