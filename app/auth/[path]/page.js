@@ -24,7 +24,11 @@ export default function AuthPage(){
    if(r?.error){setMsg("操作失敗："+(r.error.message||"請稍後再試"));return}
    if(forgot){setMsg("已送出。如果此信箱有帳號，請到信箱查看重設密碼郵件。");return}
    router.push("/");router.refresh();
-  }catch(e){setMsg("系統暫時無法完成操作，請稍後再試。")}
+  }catch(e){
+   console.error("[gd-auth-ui]",e);
+   const detail=e?.message||e?.cause?.message||String(e||"unknown error");
+   setMsg("登入系統錯誤："+detail);
+  }
   finally{setBusy(false)}
  }
  return <main style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f4f7f3",padding:20,fontFamily:"system-ui"}}>
