@@ -20,7 +20,7 @@ export async function PUT(req){
  try{
    await ensureSchema(sql);
    const body=await req.json();
-   const trips=Array.isArray(body.trips)?body.trips:[];
+   const trips=Array.isArray(body.trips)?body.trips:(body.trip?[body.trip]:[]);
    for(const t of trips){
      if(t?.id==null)continue;
      await sql.query(
@@ -32,5 +32,20 @@ export async function PUT(req){
  }catch(e){
    console.error("GD trips PUT failed",e);
    return NextResponse.json({cloud:false,error:"sync_failed"},{status:500});
+ }
+}
+
+export async function DELETE(req){
+ const sql=getDb();
+ if(!sql)return NextResponse.json({cloud:false,error:"database_not_configured"},{status:503});
+ try{
+   await ensureSchema(sql);
+   const id=new URL(req.url).searchParams.get("id");
+   if(!id)return NextResponse.json({cloud:false,error:"missing_id"},{status:400});
+   await sql.query("DELETE FROM gd_trips WHERE id = $1",[String(id)]);
+   return NextResponse.json({cloud:true,id:String(id)});
+ }catch(e){
+   console.error("GD trips DELETE failed",e);
+   return NextResponse.json({cloud:false,error:"delete_failed"},{status:500});
  }
 }
