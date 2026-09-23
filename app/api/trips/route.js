@@ -33,7 +33,7 @@ export async function PUT(req){
      if(t?.id==null)continue;
      await sql.query(
        "INSERT INTO gd_trips(id,payload,updated_at,owner_id) VALUES ($1,$2::jsonb,NOW(),$3) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,updated_at=NOW(),owner_id=EXCLUDED.owner_id WHERE gd_trips.owner_id = EXCLUDED.owner_id",
-       [String(t.id),JSON.stringify(t),owner]
+       [String(t.id),JSON.stringify(payload),owner]
      );
    }
    return NextResponse.json({cloud:true,count:trips.length});
