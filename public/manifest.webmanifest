@@ -1,11 +1,11 @@
 {
-  "name": "GD 車趟管理",
-  "short_name": "GD 車趟",
-  "description": "GD 車趟接單、派車與行程管理系統",
+  "name": "GD Car",
+  "short_name": "GD Car",
+  "description": "GD Car｜車趟管理、派車、司機定位與出車提醒",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4f7f3",
-  "theme_color": "#1f6046",
+  "background_color": "#fffaf0",
+  "theme_color": "#f5b82e",
   "lang": "zh-Hant",
   "orientation": "portrait-primary"
 }
