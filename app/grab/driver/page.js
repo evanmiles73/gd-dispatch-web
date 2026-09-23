@@ -2,7 +2,8 @@
 import {useEffect,useState} from "react";
 
 export default function GrabPool(){
- const [trips,setTrips]=useState([]),[loading,setLoading]=useState(true),[msg,setMsg]=useState(""),[driverName,setDriverName]=useState(""),[driverPhone,setDriverPhone]=useState("");\n useEffect(()=>{try{setDriverName(localStorage.getItem("gd_driver_name")||"");setDriverPhone(localStorage.getItem("gd_driver_phone")||"")}catch{}},[]);
+ const [trips,setTrips]=useState([]),[loading,setLoading]=useState(true),[msg,setMsg]=useState(""),[driverName,setDriverName]=useState(""),[driverPhone,setDriverPhone]=useState("");
+ useEffect(()=>{try{setDriverName(localStorage.getItem("gd_driver_name")||"");setDriverPhone(localStorage.getItem("gd_driver_phone")||"")}catch{}},[]);
  const load=async()=>{setLoading(true);try{const r=await fetch("/api/grab-pool",{cache:"no-store"});const j=await r.json();setTrips(j.trips||[])}catch{setMsg("目前無法讀取抓單池")}finally{setLoading(false)}};
  useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t)},[]);
  const claim=async t=>{if(!driverName.trim())return setMsg("請先填司機姓名");try{localStorage.setItem("gd_driver_name",driverName.trim());localStorage.setItem("gd_driver_phone",driverPhone.trim())}catch{}if(!confirm(`確定接下 ${t.date||""} ${t.time||""} 這一趟？接單後會立即鎖單。`))return;setMsg("接單中…");try{const r=await fetch("/api/grab-pool",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tripId:t.id,driverName:driverName.trim(),driverPhone:driverPhone.trim()})});const j=await r.json();if(r.ok){setMsg("✅ 接單成功，車趟已鎖定並回傳主後台");setTrips(x=>x.filter(v=>v.id!==t.id))}else if(r.status===401)setMsg("請先登入 GD Car 帳號後再接單");else if(r.status===409){setMsg("這一趟已被其他司機接走");load()}else setMsg("接單失敗，請稍後再試")}catch{setMsg("網路異常，請稍後再試")}};
