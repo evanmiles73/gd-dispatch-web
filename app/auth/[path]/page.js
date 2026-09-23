@@ -17,7 +17,7 @@ const copy={
 
 export default async function AuthPage({params}){
  const {path}=await params; const t=copy[path]||{title:"帳號驗證",desc:"請完成帳號驗證",note:""};
- return <main style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f4f7f3",padding:20}}>
+ return <main className="gd-auth-zh" style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f4f7f3",padding:20}}>
   <section style={{width:"min(520px,100%)"}}>
    <div style={{textAlign:"center",marginBottom:16,color:"#16231d"}}>
     <div style={{letterSpacing:4,fontSize:12,color:"#748078"}}>GD OPERATIONS</div>
@@ -25,6 +25,16 @@ export default async function AuthPage({params}){
     <h2 style={{margin:"0 0 6px",fontSize:24}}>{t.title}</h2>
     <p style={{margin:"0 0 14px",color:"#657068"}}>{t.desc}</p>
    </div>
+   <style>{`
+    .gd-auth-zh [data-slot="card-title"],.gd-auth-zh [data-slot="card-description"]{font-size:0!important}
+    .gd-auth-zh label{font-size:0}
+    .gd-auth-zh label[for*="email"]::after{content:"電子郵件";font-size:16px}
+    .gd-auth-zh label[for*="password"]::after{content:"密碼";font-size:16px}
+    .gd-auth-zh input[type="email"]::placeholder{color:transparent}
+    .gd-auth-zh input[type="password"]::placeholder{color:transparent}
+    .gd-auth-zh button[type="submit"]{font-size:0}
+    .gd-auth-zh button[type="submit"]::after{content:"確認送出";font-size:16px}
+   `}</style>
    <AuthView path={path}/>
    {t.note&&<div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:"#fff",color:"#526159",fontSize:14,textAlign:"center",lineHeight:1.7}}>中文操作：{t.note}</div>}
   </section>
