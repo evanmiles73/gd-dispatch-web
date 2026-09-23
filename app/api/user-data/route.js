@@ -2,7 +2,7 @@ import {NextResponse} from "next/server";
 import {getDb,ensureSchema} from "../../../lib/db";
 import {auth} from "../../../lib/auth/server";
 async function ownerFrom(){const r=await auth.getSession();const u=r?.user||r?.data?.user;return u?.id||null}
-const okKind=k=>["grab_profiles","support_reports","drivers","preferences"].includes(k);
+const okKind=k=>["grab_profiles","support_reports","drivers","preferences","pricing_rules"].includes(k);
 export async function GET(req){
  const owner=await ownerFrom();if(!owner)return NextResponse.json({error:"unauthorized"},{status:401});
  const kind=new URL(req.url).searchParams.get("kind");if(!okKind(kind))return NextResponse.json({error:"invalid_kind"},{status:400});
