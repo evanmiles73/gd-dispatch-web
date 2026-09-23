@@ -10,10 +10,12 @@ function authBaseUrl() {
 
 async function proxy(request, context) {
   const { path = [] } = await context.params;
-  const upstream = new URL(`${authBaseUrl()}/${path.join("/")}`);
-
-  // Preserve query parameters used by Better Auth callbacks/session flows.
+  const base = authBaseUrl();
   const incoming = new URL(request.url);
+
+  // Neon Auth exposes the Better Auth API below /api/auth.
+  // The local route is also /api/auth/*, so forward the complete API path.
+  const upstream = new URL(`${base}/api/auth/${path.join("/")}`);
   incoming.searchParams.forEach((value, key) => upstream.searchParams.append(key, value));
 
   const headers = new Headers(request.headers);
@@ -36,13 +38,15 @@ async function proxy(request, context) {
     const response = await fetch(upstream, init);
     const responseHeaders = new Headers(response.headers);
 
-    // Never expose an upstream host in redirects; keep auth navigation same-origin.
     const location = responseHeaders.get("location");
     if (location) {
       try {
         const redirectUrl = new URL(location, upstream);
         if (redirectUrl.origin === upstream.origin) {
-          responseHeaders.set("location", `/api/auth${redirectUrl.pathname.replace(authBaseUrl().replace(upstream.origin, ""), "")}${redirectUrl.search}`);
+          const marker = "/api/auth/";
+          const i = redirectUrl.pathname.indexOf(marker);
+          const localPath = i >= 0 ? redirectUrl.pathname.slice(i + marker.length) : redirectUrl.pathname.replace(/^\//, "");
+          responseHeaders.set("location", `/api/auth/${localPath}${redirectUrl.search}`);
         }
       } catch {}
     }
@@ -57,8 +61,12 @@ async function proxy(request, context) {
       path: path.join("/"),
       message: error instanceof Error ? error.message : String(error),
       upstreamHost: upstream.host,
+      upstreamPath: upstream.pathname,
     });
-    return Response.json({ error: { message: "Authentication service temporarily unavailable" } }, { status: 502 });
+    return Response.json(
+      { error: { message: "Authentication service temporarily unavailable" } },
+      { status: 502 }
+    );
   }
 }
 
