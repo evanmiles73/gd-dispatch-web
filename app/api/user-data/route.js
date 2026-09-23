@@ -2,7 +2,8 @@ import {NextResponse} from "next/server";
 import {getDb,ensureSchema} from "../../../lib/db";
 import {auth} from "../../../lib/auth/server";
 async function userFrom(){const r=await auth.getSession();return r?.user||r?.data?.user||null}
-async function accessFor(sql,u){const id=u?.id;if(!id)return {role:"free",pricing:false};const configured=(process.env.GD_OWNER_EMAIL||"").trim().toLowerCase();if(configured&&String(u.email||"").toLowerCase()===configured)return {role:"owner",pricing:true};const rows=await sql.query("SELECT role,pricing_enabled FROM gd_access_control WHERE owner_id=$1",[id]);const role=rows[0]?.role||"free";return {role,pricing:Boolean(rows[0]?.pricing_enabled)||["owner","admin","pro"].includes(role)}}
+const ROOT_OWNERS=new Set(["delta198073@icloud.com","judehu100427@icloud.com"]);
+async function accessFor(sql,u){const id=u?.id;if(!id)return {role:"free",pricing:false};const email=String(u.email||"").trim().toLowerCase();const configured=(process.env.GD_OWNER_EMAIL||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);if(ROOT_OWNERS.has(email)||configured.includes(email))return {role:"owner",pricing:true};const rows=await sql.query("SELECT role,pricing_enabled FROM gd_access_control WHERE owner_id=$1",[id]);const role=rows[0]?.role||"free";return {role,pricing:Boolean(rows[0]?.pricing_enabled)||["owner","admin","pro"].includes(role)}}
 const okKind=k=>["grab_profiles","support_reports","drivers","preferences","pricing_rules"].includes(k);
 export async function GET(req){
  const u=await userFrom();const owner=u?.id;if(!owner)return NextResponse.json({error:"unauthorized"},{status:401});
