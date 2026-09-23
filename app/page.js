@@ -24,15 +24,23 @@ function parseTrip(text){
  const flightLine=val(["航班資訊","航班號碼","航班","班機號碼","班機","Flight","航班編號"]);
  const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|AE|B7|MF|MU|CZ|HO|HU|NX|UO|HB)[- ]?\d{2,4})\b/i,/\b([A-Z0-9]{2,3}[- ]?\d{2,4})\b/i]); const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
  o.flight=flightCode.replace(/\s+/g,"")+(flightTime?" / "+flightTime:"");
- o.passengers=match(t,[/(?:人數|乘客人數|乘客)\s*[:：]?\s*(\d+)/]);
+ o.passengers=match(t,[/(?:人數|乘客人數|乘客|共)\s*[:：]?\s*(\d+)\s*(?:人|位)?/]);
+ const serviceText=val(["服務類型","用車類型","行程類型","接送類型","類型","服務"]);
+ if(/接機|機場接機/.test(serviceText||t))o.service="接機";else if(/送機|機場送機/.test(serviceText||t))o.service="送機";else if(/登山|登山接駁/.test(serviceText||t))o.service="登山接駁";else if(/單車|保母車|自行車/.test(serviceText||t))o.service="單車補給";else if(/包車|旅遊|一日遊/.test(serviceText||t))o.service="包車旅遊";
+ const carText=val(["需求車型","指定車型","車型","車種","大小車"]);
+ if(/九人|9人|大車|Vito|V-Class|VClass|VITO/i.test(carText))o.carClass="大車";else if(/小車|轎車|五人|5人|Cross|E-Class/i.test(carText))o.carClass="小車";
+ const child=val(["兒童座椅","安全座椅","汽座"]);if(child)o.childSeat=match(child,[/(\d+)/])||(/需要|有|一/.test(child)?"1":"0");
+ const booster=val(["增高墊","增高座墊"]);if(booster)o.booster=match(booster,[/(\d+)/])||(/需要|有|一/.test(booster)?"1":"0");
  const parseLuggage=(s="")=>{const items=[];const re=/((?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸)|胖胖箱(?:\s*(?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸))?)\s*(?:(?:[xX×*]\s*)?(\d+)\s*(?:件|個|咖)?|[xX×*]\s*(\d+))?/g;let m;while((m=re.exec(s))){const size=m[1].replace(/寸/g,"吋").replace(/\s/g,"");const qty=m[2]||m[3]||"1";items.push(`${size} × ${qty}`)}return items.join("｜")};
  const luggageRaw=val(["托運行李","托運","大行李","行李箱","行李"]);o.luggage=parseLuggage(luggageRaw||t);
  const carry=val(["手提行李","隨身行李","手提","隨身","Carry-on"]);o.carryOn=carry?(match(carry,[/(\d+)\s*(?:件|個|咖)?/])||clean(carry)):match(t,[/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
- o.vehicle=val(["車型","車種"]);o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");o.notes=val(["備註","其他"]);
+ o.vehicle=val(["車型","車種","需求車型","指定車型"]);o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");o.notes=val(["備註","其他"]);
  const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n").normalize("NFKC").replace(/\s+/g,"");
  if(/桃園(?:國際)?機場.*(?:第一航廈|第1航廈|一航廈|T1)|(?:第一航廈|第1航廈|一航廈|T1).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T1";else if(/桃園(?:國際)?機場.*(?:第二航廈|第2航廈|二航廈|T2)|(?:第二航廈|第2航廈|二航廈|T2).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T2";else if(/桃園(?:國際)?機場.*(?:第三航廈|第3航廈|三航廈|T3)|(?:第三航廈|第3航廈|三航廈|T3).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T3";else if(/松山(?:機場)?/i.test(airportText))o.airport="松山機場";else if(/(?:清泉崗|台中)(?:機場)?/i.test(airportText))o.airport="清泉崗機場";else if(/台南(?:機場)?/i.test(airportText))o.airport="台南機場";else if(/(?:小港|高雄)(?:機場)?/i.test(airportText))o.airport="小港機場";
  const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)\s*[:：]?\s*([^\n]+)/g);if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
  const regionHit=(o.pickup||"").match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)(?:市|縣)?/);if(regionHit)o.region=regionHit[1];
+ const cross=val(["跨縣市","跨縣"]);if(cross)o.crossCounty=/是|有|需要|跨/.test(cross)?"是":"否";else{const county=x=>(String(x||"").match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)(?:市|縣)?/)||[])[1]||"";const a=county(o.pickup),b=county(o.dropoff);if(a&&b&&a!==b)o.crossCounty="是"}
+ const km=val(["多點距離","多點KM","加點距離","額外距離"]);if(km)o.extraKm=(km.match(/[\d.]+/)||[""])[0];
  return o;
 }
 export default function Home(){
