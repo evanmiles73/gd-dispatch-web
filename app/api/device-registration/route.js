@@ -30,8 +30,10 @@ export async function PUT(req){
     const token=String(body.token||"").trim();
     const platform=String(body.platform||"").toLowerCase();
     const deviceName=String(body.deviceName||"").slice(0,120);
-    if(!token||!["ios","android"].includes(platform))
+    if(!token||token.length>512||!["ios","android"].includes(platform))
       return NextResponse.json({ok:false,error:"invalid_device"},{status:400});
+    if(platform==="ios"&&!/^[a-fA-F0-9]{64,512}$/.test(token))
+      return NextResponse.json({ok:false,error:"invalid_ios_token"},{status:400});
     await ensureDeviceSchema(sql);
     await sql.query(
       `INSERT INTO gd_device_registrations(token,owner_id,platform,device_name,enabled,updated_at)
