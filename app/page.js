@@ -10,35 +10,28 @@ function parseTrip(text){
  const val=(labels)=>{for(const line of lines){for(const label of labels){const re=new RegExp("^\\s*"+label+"\\s*[:：]?\\s*(.+)$","i"),m=line.match(re);if(m?.[1])return clean(m[1])}}return ""};
  const dateRaw=val(["日期","用車日期","接送日期"])||match(t,[/\b(20\d{2}[\/-]\d{1,2}[\/-]\d{1,2})\b/,/\b(\d{1,2}[\/-]\d{1,2})\b/]);
  if(dateRaw){const nums=dateRaw.match(/\d+/g)||[];if(nums.length>=3)o.date=`${nums[0].padStart(4,"0")}-${nums[1].padStart(2,"0")}-${nums[2].padStart(2,"0")}`;else if(nums.length===2){const y=new Date().getFullYear();o.date=`${y}-${nums[0].padStart(2,"0")}-${nums[1].padStart(2,"0")}`}}
- const timeRaw=val(["時間","用車時間","接送時間","上車時間"])||match(t,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]);
- const tm=timeRaw.match(/(?:上午|下午|早上|晚上)?\s*(\d{1,2})[:：](\d{2})/);
+ const timeRaw=val(["時間","用車時間","接送時間","上車時間","出發時間"])||match(t,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]); const tm=timeRaw.match(/(?:上午|下午|早上|晚上)?\s*(\d{1,2})[:：](\d{2})/);
  if(tm){let h=Number(tm[1]);if(/下午|晚上/.test(timeRaw)&&h<12)h+=12;if(/上午|早上/.test(timeRaw)&&h===12)h=0;o.time=String(h).padStart(2,"0")+":"+tm[2]}
  o.name=clean(val(["客人姓名","乘客姓名","聯絡人","客人","姓名"]).replace(/\s*(?:電話|手機|聯絡電話)\s*[:：].*$/,""));
  o.phone=match(t,[/(?:電話|手機|聯絡電話)\s*[:：]?\s*(09\d{2}[- ]?\d{3}[- ]?\d{3})/i,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]).replace(/[- ]/g,"");
- o.pickup=val(["上車地點","上車地址","上車","接送地點","接人地點","出發地","起點","住址","地址"])||match(t,[/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]);
- o.dropoff=val(["下車地點","下車地址","下車","送達地點","送往","目的地","終點"])||match(t,[/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]);
- const flightLine=val(["航班資訊","航班號碼","航班","班機號碼","班機","Flight"]);
- const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX)[- ]?\d{2,4})\b/i,/\b([A-Z]{2,3}\d{2,4})\b/]);
- const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
- o.flight=flightCode+(flightTime?" / "+flightTime:"");
- o.passengers=match(t,[/(?:人數|乘客人數)\s*[:：]?\s*(\d+)/]);
- const luggageRaw=val(["托運行李","大行李","行李箱","行李"]);
- const parseLuggage=(s="")=>{const items=[];const re=/((?:32|30|28|26|24|22|20)\s*(?:吋|寸)|胖胖箱(?:\s*(?:32|30|28|26|24|22|20)\s*(?:吋|寸))?)\s*(?:(?:[xX×*]\s*)?(\d+)\s*件|[xX×*]\s*(\d+))?/g;let m;while((m=re.exec(s))){const size=m[1].replace(/寸/g,"吋").replace(/\s/g,"");const qty=m[2]||m[3]||"1";items.push(`${size} × ${qty}`)}return items.join("｜")};
- o.luggage=parseLuggage(luggageRaw||t);
- const carry=val(["手提行李","隨身行李","手提","隨身"]);o.carryOn=carry?match(carry,[/(\d+)\s*件?/]):match(t,[/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
- o.vehicle=val(["車型","車種"]);
- o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");
- o.notes=val(["備註","其他"]);
+ const labeledPickup=val(["上車地點","上車地址","上車","接送地點","接人地點","出發地","起點","住址","地址","Pickup"]);
+ const labeledDropoff=val(["下車地點","下車地址","下車","送達地點","送往","目的地","終點","Dropoff"]);
+ const stripMap=s=>clean(String(s||"").replace(/https?:\/\/\S+/gi,"").replace(/(?:Google\s*Maps?|地圖連結|地圖)\s*[:：]?\s*$/i,""));
+ o.pickup=stripMap(labeledPickup);o.dropoff=stripMap(labeledDropoff);
+ if(!o.pickup||!o.dropoff){const arrow=lines.find(x=>/(?:→|->|➡|➜|＞|>)/.test(x)&&!/^https?:/i.test(x));if(arrow){const p=arrow.split(/(?:→|->|➡️?|➜|＞|>)/);if(p.length>=2){o.pickup||=stripMap(p[0]);o.dropoff||=stripMap(p.slice(1).join(" "))}}}
+ if(!o.pickup)o.pickup=stripMap(match(t,[/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]));
+ if(!o.dropoff)o.dropoff=stripMap(match(t,[/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]));
+ const flightLine=val(["航班資訊","航班號碼","航班","班機號碼","班機","Flight","航班編號"]);
+ const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|AE|B7|MF|MU|CZ|HO|HU|NX|UO|HB)[- ]?\d{2,4})\b/i,/\b([A-Z0-9]{2,3}[- ]?\d{2,4})\b/i]); const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
+ o.flight=flightCode.replace(/\s+/g,"")+(flightTime?" / "+flightTime:"");
+ o.passengers=match(t,[/(?:人數|乘客人數|乘客)\s*[:：]?\s*(\d+)/]);
+ const parseLuggage=(s="")=>{const items=[];const re=/((?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸)|胖胖箱(?:\s*(?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸))?)\s*(?:(?:[xX×*]\s*)?(\d+)\s*(?:件|個|咖)?|[xX×*]\s*(\d+))?/g;let m;while((m=re.exec(s))){const size=m[1].replace(/寸/g,"吋").replace(/\s/g,"");const qty=m[2]||m[3]||"1";items.push(`${size} × ${qty}`)}return items.join("｜")};
+ const luggageRaw=val(["托運行李","托運","大行李","行李箱","行李"]);o.luggage=parseLuggage(luggageRaw||t);
+ const carry=val(["手提行李","隨身行李","手提","隨身","Carry-on"]);o.carryOn=carry?(match(carry,[/(\d+)\s*(?:件|個|咖)?/])||clean(carry)):match(t,[/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
+ o.vehicle=val(["車型","車種"]);o.amount=(val(["金額","車資","費用","價格"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");o.notes=val(["備註","其他"]);
  const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n").normalize("NFKC").replace(/\s+/g,"");
- if(/桃園(?:國際)?機場.*(?:第一航廈|第1航廈|一航廈|T1)|(?:第一航廈|第1航廈|一航廈|T1).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T1";
- else if(/桃園(?:國際)?機場.*(?:第二航廈|第2航廈|二航廈|T2)|(?:第二航廈|第2航廈|二航廈|T2).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T2";
- else if(/桃園(?:國際)?機場.*(?:第三航廈|第3航廈|三航廈|T3)|(?:第三航廈|第3航廈|三航廈|T3).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T3";
- else if(/松山(?:機場)?/i.test(airportText))o.airport="松山機場";
- else if(/(?:清泉崗|台中)(?:機場)?/i.test(airportText))o.airport="清泉崗機場";
- else if(/台南(?:機場)?/i.test(airportText))o.airport="台南機場";
- else if(/(?:小港|高雄)(?:機場)?/i.test(airportText))o.airport="小港機場";
+ if(/桃園(?:國際)?機場.*(?:第一航廈|第1航廈|一航廈|T1)|(?:第一航廈|第1航廈|一航廈|T1).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T1";else if(/桃園(?:國際)?機場.*(?:第二航廈|第2航廈|二航廈|T2)|(?:第二航廈|第2航廈|二航廈|T2).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T2";else if(/桃園(?:國際)?機場.*(?:第三航廈|第3航廈|三航廈|T3)|(?:第三航廈|第3航廈|三航廈|T3).*桃園(?:國際)?機場/i.test(airportText))o.airport="桃園T3";else if(/松山(?:機場)?/i.test(airportText))o.airport="松山機場";else if(/(?:清泉崗|台中)(?:機場)?/i.test(airportText))o.airport="清泉崗機場";else if(/台南(?:機場)?/i.test(airportText))o.airport="台南機場";else if(/(?:小港|高雄)(?:機場)?/i.test(airportText))o.airport="小港機場";
  const stops=t.match(/(?:第二(?:上|下)車|多點|加點|中途點|停靠點)\s*[:：]?\s*([^\n]+)/g);if(stops)o.extraStops=stops.map(x=>x.replace(/^[^:：]*[:：]?/,"").trim()).join("；");
- if(!o.pickup||!o.dropoff){const m=t.match(/([^\n]{4,})\s*(?:→|->|➡️?)\s*([^\n]{4,})/);if(m){o.pickup||=clean(m[1]);o.dropoff||=clean(m[2])}}
  const regionHit=(o.pickup||"").match(/(台北|新北|基隆|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|連江)(?:市|縣)?/);if(regionHit)o.region=regionHit[1];
  return o;
 }
