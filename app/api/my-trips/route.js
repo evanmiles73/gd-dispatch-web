@@ -1,0 +1,6 @@
+import {NextResponse} from "next/server";
+import {getDb,ensureSchema} from "../../../lib/db";
+import {auth} from "../../../lib/auth/server";
+async function userFrom(){const r=await auth.getSession();return r?.user||r?.data?.user||null}
+const full=t=>({id:t.id,date:t.date,time:t.time,service:t.service,region:t.region,airport:t.airport,carClass:t.carClass||t.vehicle||"",amount:t.amount||"",pickup:t.pickup||t.pickupAddress||"",dropoff:t.dropoff||t.dropoffAddress||"",customer:t.customer||t.customerName||"",phone:t.phone||t.customerPhone||"",flight:t.flight||"",luggage:t.luggage||"",carryOn:t.carryOn||"",childSeat:t.childSeat||0,booster:t.booster||0,notes:t.notes||"",status:t.status||"已接"});
+export async function GET(){const user=await userFrom();if(!user?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});try{await ensureSchema(sql);const rows=await sql.query("SELECT t.payload,c.claimed_at FROM gd_grab_claims c JOIN gd_trips t ON t.id=c.trip_id WHERE c.driver_id=$1 ORDER BY c.claimed_at DESC",[String(user.id)]);return NextResponse.json({ok:true,trips:rows.map(r=>({...full(r.payload),claimedAt:r.claimed_at}))})}catch(e){console.error("my trips GET",e);return NextResponse.json({ok:false,error:"unavailable"},{status:503})}}
