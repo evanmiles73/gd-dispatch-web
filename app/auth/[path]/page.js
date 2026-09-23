@@ -4,23 +4,29 @@ import { authViewPaths } from "@neondatabase/auth-ui/server";
 export const dynamicParams=false;
 export function generateStaticParams(){return Object.values(authViewPaths).map(path=>({path}))}
 
-const zh={
- "sign-in":{title:"登入 GD 車趟管理",subtitle:"請輸入電子郵件與密碼登入",email:"電子郵件",password:"密碼",submit:"登入",switchText:"還沒有帳號？",switchLabel:"註冊帳號"},
- "sign-up":{title:"建立 GD 車趟管理帳號",subtitle:"建立帳號後即可同步你的車趟資料",email:"電子郵件",password:"密碼",submit:"建立帳號",switchText:"已經有帳號？",switchLabel:"登入"},
+const copy={
+ "sign-in":{title:"登入",desc:"請輸入電子郵件與密碼登入你的帳號",note:"電子郵件｜密碼｜登入｜忘記密碼｜還沒有帳號？註冊帳號"},
+ "sign-up":{title:"註冊帳號",desc:"建立帳號後即可安全同步你的車趟資料",note:"電子郵件｜密碼｜確認密碼｜建立帳號｜已經有帳號？登入"},
+ "forgot-password":{title:"忘記密碼",desc:"輸入電子郵件，我們會寄送密碼重設連結",note:"電子郵件｜寄送重設連結｜返回登入"},
+ "reset-password":{title:"重設密碼",desc:"請設定新的登入密碼",note:"新密碼｜確認新密碼｜重設密碼"},
+ "magic-link":{title:"電子郵件快速登入",desc:"輸入電子郵件取得登入連結",note:"電子郵件｜寄送登入連結｜返回登入"},
+ "two-factor":{title:"雙重驗證",desc:"請輸入驗證碼完成登入",note:"驗證碼｜確認"},
+ "sign-out":{title:"登出",desc:"正在安全登出你的帳號",note:""},
+ "callback":{title:"登入驗證中",desc:"正在完成登入，請稍候",note:""}
 };
 
 export default async function AuthPage({params}){
- const {path}=await params;
- const t=zh[path];
+ const {path}=await params; const t=copy[path]||{title:"帳號驗證",desc:"請完成帳號驗證",note:""};
  return <main style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f4f7f3",padding:20}}>
   <section style={{width:"min(520px,100%)"}}>
-   <div style={{textAlign:"center",marginBottom:18}}>
+   <div style={{textAlign:"center",marginBottom:16,color:"#16231d"}}>
     <div style={{letterSpacing:4,fontSize:12,color:"#748078"}}>GD OPERATIONS</div>
-    <h1 style={{margin:"8px 0 4px",fontSize:30}}>GD 車趟管理</h1>
-    {t&&<><h2 style={{margin:"8px 0"}}>{t.title}</h2><p style={{color:"#657068"}}>{t.subtitle}</p></>}
+    <h1 style={{margin:"8px 0 18px",fontSize:30}}>GD 車趟管理</h1>
+    <h2 style={{margin:"0 0 6px",fontSize:24}}>{t.title}</h2>
+    <p style={{margin:"0 0 14px",color:"#657068"}}>{t.desc}</p>
    </div>
    <AuthView path={path}/>
-   {t&&<div style={{marginTop:14,textAlign:"center",color:"#526159",fontSize:14}}>介面中的 Email＝{t.email}｜Password＝{t.password}｜Login＝登入｜Sign Up＝註冊帳號｜Forgot your password?＝忘記密碼</div>}
+   {t.note&&<div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:"#fff",color:"#526159",fontSize:14,textAlign:"center",lineHeight:1.7}}>中文操作：{t.note}</div>}
   </section>
  </main>;
 }
