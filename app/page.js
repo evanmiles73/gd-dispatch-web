@@ -17,7 +17,7 @@ function parseTrip(text){
  o.phone=match(t,[/(?:電話|手機|聯絡電話|聯絡手機)\s*[:：]?\s*(09\d{2}[- ]?\d{3}[- ]?\d{3})/i,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]).replace(/[- ]/g,"");
  const labeledPickup=val(["上車地點","上車地址","上車位置","上車","接送地點","接人地點","接送地址","出發地址","出發地","出發","起點","住址","地址","Pickup"]);
  const labeledDropoff=val(["下車地點","下車地址","下車位置","下車","送達地點","送達地址","送往","目的地址","目的地","目的","抵達","終點","Dropoff"]);
- const stripMap=s=>clean(String(s||"").replace(/https?:\/\/\S+/gi,"").replace(/(?:Google\s*Maps?|地圖連結|地圖)\s*[:：]?\s*$/i,""));
+ const stripMap=s=>clean(String(s||"").replace(/(?:https?:\/\/)?(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps|maps\.google\.com)\/\S*/gi,"").replace(/https?:\/\/\S+/gi,"").replace(/(?:Google\s*Maps?|Google地圖|地圖連結|地圖)\s*[:：]?\s*$/i,""));
  o.pickup=stripMap(labeledPickup);o.dropoff=stripMap(labeledDropoff);
  if(!o.pickup||!o.dropoff){const arrow=lines.find(x=>/(?:→|->|➡|➜|＞|>)/.test(x)&&!/^https?:/i.test(x));if(arrow){const p=arrow.split(/(?:→|->|➡️?|➜|＞|>)/);if(p.length>=2){o.pickup||=stripMap(p[0]);o.dropoff||=stripMap(p.slice(1).join(" "))}}}
  if(!o.pickup)o.pickup=stripMap(match(t,[/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]));
