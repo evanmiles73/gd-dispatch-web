@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {authClient} from "../lib/auth/client";
 const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",passengers:"",luggage:"",carryOn:"",vehicle:"",amount:"",notes:"",driver:"",driverPhone:"",payment:"未收",returnMoney:"待回金",returnAccount:"",region:"",carClass:"",service:"機場接送",childSeat:"0",booster:"0",airport:"",extraStops:"",extraKm:"",crossCounty:"否",reminder24h:"是",driverLine:"",driverLineUserId:""};
-const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","胖胖箱"];
+const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","18吋","16吋","胖胖箱"];
 const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
 function parseDriver(text){const t=text.replace(/：/g,":");return {name:match(t,[/^(?:司機姓名|駕駛姓名|司機|駕駛|姓名|名字)\s*[:：]\s*([^\n]+)$/mi]),phone:match(t,[/(?:電話|手機)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]),car:match(t,[/(?:車牌|車號)[:\s]*([^\n]+)/]),carModel:match(t,[/(?:車款|車型)[:\s]*([^\n]+)/]),carColor:match(t,[/(?:車色|顏色)[:\s]*([^\n]+)/]),license:/駕照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",registration:/行照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",insurance:/保險.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",blacklist:/黑名單.{0,5}(?:是|有|✓)/.test(t)?"是":"否"}}
