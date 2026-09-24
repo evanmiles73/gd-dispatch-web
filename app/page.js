@@ -5,7 +5,7 @@ const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",pas
 const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","胖胖箱"];
 const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
-function parseDriver(text){const t=text.replace(/：/g,":");return {name:match(t,[/(?:司機姓名|駕駛姓名|司機|駕駛|姓名|名字)\s*[:：]?\s*([^\n]+)/]),phone:match(t,[/(?:電話|手機)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]),car:match(t,[/(?:車牌|車號)[:\s]*([^\n]+)/]),carModel:match(t,[/(?:車款|車型)[:\s]*([^\n]+)/]),carColor:match(t,[/(?:車色|顏色)[:\s]*([^\n]+)/]),license:/駕照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",registration:/行照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",insurance:/保險.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",blacklist:/黑名單.{0,5}(?:是|有|✓)/.test(t)?"是":"否"}}
+function parseDriver(text){const t=text.replace(/：/g,":");return {name:match(t,[/^(?:司機姓名|駕駛姓名|司機|駕駛|姓名|名字)\s*[:：]\s*([^\n]+)$/mi]),phone:match(t,[/(?:電話|手機)[:\s]*([^\n]+)/,/(09\d{2}[- ]?\d{3}[- ]?\d{3})/]),car:match(t,[/(?:車牌|車號)[:\s]*([^\n]+)/]),carModel:match(t,[/(?:車款|車型)[:\s]*([^\n]+)/]),carColor:match(t,[/(?:車色|顏色)[:\s]*([^\n]+)/]),license:/駕照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",registration:/行照.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",insurance:/保險.{0,5}(?:有|是|✓|已)/.test(t)?"是":"否",blacklist:/黑名單.{0,5}(?:是|有|✓)/.test(t)?"是":"否"}}
 function parseTrip(text){
  const raw=text.replace(/：/g,":").replace(/\r/g,""),lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean),t=lines.join("\n"),o={...empty};
  const val=(labels)=>{for(const line of lines){for(const label of labels){const re=new RegExp("^\\s*"+label+"\\s*[:：]?\\s*(.+)$","i"),m=line.match(re);if(m?.[1])return clean(m[1])}}return ""};
