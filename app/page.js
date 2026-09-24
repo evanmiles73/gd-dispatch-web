@@ -67,7 +67,7 @@ export default function Home(){
   setGrabProfiles(JSON.parse(localStorage.getItem(key("profiles"))||"[]"));
  }catch{}
  const pullUser=async()=>{
-  for(const [kind,setter,cache] of [["drivers",setDrivers,"drivers"],["grab_profiles",x=>{const a=Array.isArray(x)?x:[];setGrabProfiles(a);if(a[0])setGrab(p=>({...p,...a[0]}))},"profiles"],["pricing_rules",x=>{if(x?.[0])setPricingRules(p=>({...p,...x[0]}))},"pricing"]]){
+  for(const [kind,setter,cache] of [["drivers",setDrivers,"drivers"],["grab_profiles",x=>{const a=Array.isArray(x)?x:[];setGrabProfiles(a);setGrab(a[0]?{name:"抓單條件 1",date:"不限",timeStart:"",timeEnd:"",area:"不限",amountMin:"",amountMax:"",size:"皆可",type:"全部",active:true,...a[0]}:{name:"抓單條件 1",date:"不限",timeStart:"",timeEnd:"",area:"不限",amountMin:"",amountMax:"",size:"皆可",type:"全部",active:true})},"profiles"],["pricing_rules",x=>{const base={crossCounty:300,km12to20:400,km21to30:600,kmStep:100,childSeat:100,booster:100};setPricingRules(x?.[0]?{...base,...x[0]}:base)},"pricing"]]){
    try{const r=await fetch("/api/user-data?kind="+kind,{cache:"no-store"});const j=await r.json();if(kind==="pricing_rules"){setPricingAccess(Boolean(r.ok&&j?.access?.pricing));setPricingRole(j?.access?.role||j?.role||"free")}if(r.ok&&Array.isArray(j.data)){setter(j.data);localStorage.setItem(key(cache),JSON.stringify(j.data))}}catch{}
   }
  };
