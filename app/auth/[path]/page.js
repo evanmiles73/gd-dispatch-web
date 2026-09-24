@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {useParams,useRouter} from "next/navigation";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {authClient} from "../../../lib/auth/client";
 
 export default function AuthPage(){
@@ -9,6 +9,12 @@ export default function AuthPage(){
  const [email,setEmail]=useState(""),[password,setPassword]=useState(""),[confirm,setConfirm]=useState(""),[busy,setBusy]=useState(false),[msg,setMsg]=useState("");
  const signup=path==="sign-up",forgot=path==="forgot-password",reset=path==="reset-password";
  const title=signup?"註冊帳號":forgot?"忘記密碼":reset?"設定新密碼":"登入";
+ useEffect(()=>{
+  const productionHost="gd-dispatch-web-xi.vercel.app";
+  if(location.hostname.endsWith(".vercel.app")&&location.hostname!==productionHost){
+   location.replace("https://"+productionHost+location.pathname+location.search);
+  }
+ },[]);
  const desc=signup?"建立帳號後即可安全同步你的車趟資料":forgot?"輸入電子郵件，我們會寄送密碼重設連結":reset?"請輸入新的登入密碼":"請輸入電子郵件與密碼登入";
  async function submit(e){
   e.preventDefault();setMsg("");
