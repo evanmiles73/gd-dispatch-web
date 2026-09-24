@@ -60,7 +60,7 @@ export default function Home(){
  const legacy=["gdTrips","gdDrivers","gd-profiles","gd-pricing","gd-support"];
  try{
   const cacheOwner=localStorage.getItem("gd-cache-owner");
-  if(cacheOwner&&currentOwner&&cacheOwner!==currentOwner){legacy.forEach(k=>localStorage.removeItem(k));setTrips([]);setDrivers([]);setGrabProfiles([]);}
+  if(cacheOwner&&currentOwner&&cacheOwner!==currentOwner){legacy.forEach(k=>localStorage.removeItem(k));setTrips([]);setDrivers([]);setGrabProfiles([]);setDriverLocations([]);setEditing(null);setShowForm(false);setRaw("");setParseNotice("");setSaveNotice("");setSyncConflict("");setTab("總行程");setSection("總行程");}
   if(currentOwner)localStorage.setItem("gd-cache-owner",currentOwner);
   setTrips(JSON.parse(localStorage.getItem(key("trips"))||"[]"));
   setDrivers(JSON.parse(localStorage.getItem(key("drivers"))||"[]"));
