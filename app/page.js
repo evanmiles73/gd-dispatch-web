@@ -97,10 +97,10 @@ export default function Home(){
  const total=trips.reduce((s,t)=>s+money(t),0);
  const paid=trips.filter(isPaid).reduce((s,t)=>s+money(t),0);
  const unpaid=trips.filter(t=>!isPaid(t)).reduce((s,t)=>s+money(t),0);
- const pendingReturn=trips.filter(t=>!isReturned(t)).reduce((s,t)=>s+money(t),0);
+ const pendingReturn=trips.filter(t=>isPaid(t)&&!isReturned(t)).reduce((s,t)=>s+money(t),0);
  const returned=trips.filter(isReturned).reduce((s,t)=>s+money(t),0);
  const visible=(tab==="總行程"?trips:trips.filter(x=>x.status===tab)).filter(x=>{const q=query.trim().toLowerCase();const hit=!q||[x.name,x.phone,x.pickup,x.dropoff,x.flight,x.driver,x.vehicle,x.carClass].some(v=>String(v||"").toLowerCase().includes(q));return hit&&(!filters.region||x.region===filters.region)&&(!filters.car||x.carClass===filters.car)}).sort((a,b)=>{if(filters.sort==="amountDesc")return money(b)-money(a);if(filters.sort==="amountAsc")return money(a)-money(b);const A=(a.date||"")+" "+(a.time||""),B=(b.date||"")+" "+(b.time||"");return filters.sort==="dateDesc"?B.localeCompare(A):A.localeCompare(B)});
- const monthly=trips.reduce((m,t)=>{const k=(t.date||"未填日期").slice(0,7);if(!m[k])m[k]={receivable:0,paid:0,unpaid:0,pendingReturn:0,returned:0};const v=money(t);m[k].receivable+=v;if(isPaid(t))m[k].paid+=v;else m[k].unpaid+=v;if(isReturned(t))m[k].returned+=v;else m[k].pendingReturn+=v;return m},{});
+ const monthly=trips.reduce((m,t)=>{const k=(t.date||"未填日期").slice(0,7);if(!m[k])m[k]={receivable:0,paid:0,unpaid:0,pendingReturn:0,returned:0};const v=money(t);m[k].receivable+=v;if(isPaid(t))m[k].paid+=v;else m[k].unpaid+=v;if(isReturned(t))m[k].returned+=v;else if(isPaid(t))m[k].pendingReturn+=v;return m},{});
  const completedTrips=trips.filter(t=>t.status==="已完成");
  const completedMonths=[...new Set(completedTrips.map(t=>(t.date||"未填日期").slice(0,7)))].sort().reverse();
  const completedVisible=completedTrips.filter(t=>(!completedMonth||(t.date||"未填日期").slice(0,7)===completedMonth)&&(completedFilter==="全部"||(completedFilter==="未收款"&&!isPaid(t))||(completedFilter==="待回金"&&isPaid(t)&&!isReturned(t))||(completedFilter==="帳務完成"&&isPaid(t)&&isReturned(t)))).sort((a,b)=>String(b.completedAt||((b.date||"")+"T"+(b.time||""))).localeCompare(String(a.completedAt||((a.date||"")+"T"+(a.time||"")))));
