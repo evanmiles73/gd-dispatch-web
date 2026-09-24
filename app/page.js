@@ -23,7 +23,7 @@ function parseTrip(text){
  if(!o.pickup)o.pickup=stripMap(match(t,[/(?:接|從)\s*([^\n→>-]{5,}(?:市|縣)[^\n→>-]*)/]));
  if(!o.dropoff)o.dropoff=stripMap(match(t,[/(?:送|到)\s*([^\n]{4,}(?:機場|市|縣)[^\n]*)/]));
  const flightLine=val(["航班資訊","航班號碼","航班","班機號碼","班機","Flight","航班編號","航班代碼","班機資訊"]);
- const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|AE|B7|MF|MU|CZ|HO|HU|NX|UO|HB)[- ]?\d{2,4})\b/i,/\b([A-Z0-9]{2,3}[- ]?\d{2,4})\b/i]); const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
+ const flightSource=flightLine||t,flightCode=match(flightSource,[/\b((?:CI|BR|JX|CX|TR|SQ|JL|NH|MM|IT|VZ|FD|AK|KE|OZ|TG|VN|PR|5J|GK|TW|BX|AE|B7|MF|MU|CZ|HO|HU|NX|UO|HB)[\s-]*\d{2,4})\b/i,/\b([A-Z]{2,3}[\s-]*\d{2,4})\b/i]); const flightTime=flightLine?match(flightLine,[/\b((?:[01]?\d|2[0-3]):[0-5]\d)\b/]):"";
  o.flight=flightCode.replace(/\s+/g,"")+(flightTime?" / "+flightTime:"");
  o.passengers=match(t,[/(?:人數|乘客人數|乘客|共|大人|成人)\s*[:：]?\s*(\d+)\s*(?:人|位)?/]);
  const serviceText=val(["服務類型","用車類型","行程類型","接送類型","類型","服務"]);
@@ -33,7 +33,7 @@ function parseTrip(text){
  const child=val(["兒童座椅","安全座椅","汽座"]);if(child)o.childSeat=match(child,[/(\d+)/])||(/需要|有|一/.test(child)?"1":"0");
  const booster=val(["增高墊","增高座墊"]);if(booster)o.booster=match(booster,[/(\d+)/])||(/需要|有|一/.test(booster)?"1":"0");
  const parseLuggage=(s="")=>{const items=[];const re=/((?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸)|胖胖箱(?:\s*(?:32|30|28|26|24|22|20|18|16)\s*(?:吋|寸))?)\s*(?:(?:[xX×*]\s*)?(\d+)\s*(?:件|個|咖)?|[xX×*]\s*(\d+))?/g;let m;while((m=re.exec(s))){const size=m[1].replace(/寸/g,"吋").replace(/\s/g,"");const qty=m[2]||m[3]||"1";items.push(`${size} × ${qty}`)}return items.join("｜")};
- const luggageRaw=val(["托運行李","托運行李件數","托運","大行李","大件行李","行李箱","行李"]);o.luggage=parseLuggage(luggageRaw||t);if(!o.luggage&&luggageRaw){const q=match(luggageRaw,[/(\d+)\s*(?:件|個|咖)/]);if(q)o.luggage=`未註明尺寸 × ${q}`;}
+ const luggageRaw=val(["托運行李","托運行李件數","托運","大行李","大件行李","行李箱","行李"]);o.luggage=parseLuggage(luggageRaw);if(!o.luggage&&luggageRaw){const q=match(luggageRaw,[/(\d+)\s*(?:件|個|咖)/]);if(q)o.luggage=`未註明尺寸 × ${q}`;}if(!o.luggage){const luggageLine=lines.find(line=>/(?:托運|大行李|大件行李|行李箱|行李)/.test(line)&&!/(?:手提|隨身)/.test(line));if(luggageLine)o.luggage=parseLuggage(luggageLine)}
  const carry=val(["手提行李","手提行李件數","隨身行李","隨身行李件數","手提","隨身","Carry-on"]);o.carryOn=carry?(match(carry,[/(\d+)\s*(?:件|個|咖)?/])||clean(carry)):match(t,[/(?:手提行李|隨身行李|手提|隨身)\s*[:：]?\s*(\d+)/]);
  o.vehicle=val(["車型","車種","需求車型","指定車型"]);o.amount=(val(["金額","車資","費用","價格","報價","總價"]).match(/[\d,]+/)||[""])[0].replace(/,/g,"");o.notes=val(["備註","其他","特殊需求"]);
  const airportText=[o.pickup,o.dropoff,t].filter(Boolean).join("\n").normalize("NFKC").replace(/\s+/g,"");
