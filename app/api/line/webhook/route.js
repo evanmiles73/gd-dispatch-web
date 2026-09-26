@@ -51,5 +51,5 @@ export async function POST(req){
    }
   }
   try{await processPendingLineInbox(100)}catch(e){console.error("LINE silent auto process",e)}\n  return NextResponse.json({ok:true});
- }catch(e){console.error("LINE silent webhook",e);return NextResponse.json({ok:false,error:"webhook_failed"},{status:500})}
+ }catch(e){console.error("華仔 LINE silent webhook",e);return NextResponse.json({ok:false,error:"webhook_failed"},{status:500})}
 }
