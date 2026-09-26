@@ -32,8 +32,12 @@ export async function POST(req){
   await ensurePushSchema(sql);
   const owned=await sql.query("SELECT 1 FROM gd_trips WHERE id=$1 AND owner_id=$2",[tripId,String(user.id)]);
   if(!owned.length)return NextResponse.json({ok:false,error:"forbidden"},{status:403});
+  const tripRows=await sql.query("SELECT payload FROM gd_trips WHERE id=$1 AND owner_id=$2",[tripId,String(user.id)]);
+  const trip=tripRows[0]?.payload||{};
   const claim=await sql.query("SELECT 1 FROM gd_grab_claims WHERE trip_id=$1 AND driver_id=$2",[tripId,recipientId]);
-  if(!claim.length)return NextResponse.json({ok:false,error:"recipient_not_assigned"},{status:409});
+  const assignedIds=[trip.driverId,trip.driverPhone,trip.driver,trip.driverLineUserId].filter(Boolean).map(String);
+  const isAssigned=claim.length>0||assignedIds.includes(recipientId);
+  if(!isAssigned)return NextResponse.json({ok:false,error:"recipient_not_assigned"},{status:409});
   const devices=await sql.query("SELECT token,platform FROM gd_device_registrations WHERE owner_id=$1 AND enabled=TRUE",[recipientId]);
   const q=await sql.query(
    "INSERT INTO gd_push_outbox(recipient_id,trip_id,event_type,title,body,payload) VALUES($1,$2,$3,$4,$5,$6::jsonb) RETURNING id",
