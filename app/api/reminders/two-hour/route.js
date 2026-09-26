@@ -9,6 +9,7 @@ function special(p){
  const seat=Number(p.childSeat||p.childSeats||0),booster=Number(p.booster||p.boosterSeat||0);
  if(seat)items.push("安全座椅×"+seat);
  if(booster)items.push("增高墊×"+booster);
+ if(p.flight)items.push("航班 "+text(p.flight).slice(0,30));
  if(p.notes)items.push(text(p.notes).slice(0,80));
  return items.join("、")||"無";
 }
@@ -39,7 +40,8 @@ async function run(req){
    // The first driver reminder is mandatory at 2 hours. Custom reminder timing is handled separately after this first alert.
    const reminderMinutes=120,windowStart=110,windowEnd=130;
    const service=text(p.service)||"接送";
-   const msg=["GD Car 行前提醒","11/"+service,"時間："+text(p.time),"出發："+text(p.pickup||p.pickupAddress||p.from||p.startAddress),"目的："+text(p.dropoff||p.dropoffAddress||p.to||p.destinationAddress),"特殊需求："+special(p)].join("\n");
+   const kind=/接機/.test(service)?"接機":/送機/.test(service)?"送機":service;
+   const msg=["GD Car 行前提醒","11/"+kind,"時間："+text(p.time),"出發："+text(p.pickup||p.pickupAddress||p.from||p.startAddress)||"未填","目的："+text(p.dropoff||p.dropoffAddress||p.to||p.destinationAddress)||"未填","特殊需求："+special(p)].join("\n");
    if(mins>=windowStart&&mins<=windowEnd){
     const logged=await sql.query("SELECT 1 FROM gd_reminder_log WHERE owner_id=$1 AND trip_id=$2 AND reminder_type='two_hour' AND channel='line'",[row.owner_id,row.id]);
     if(!logged.length)try{
