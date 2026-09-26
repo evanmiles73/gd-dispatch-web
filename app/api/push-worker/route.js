@@ -6,7 +6,7 @@ async function run(){
  const sql=getDb();if(!sql)return {ok:false,error:"database_not_configured",status:503};
  try{
   await ensureSchema(sql);
-  const jobs=await sql.query("SELECT id,recipient_id,trip_id,title,body,attempts FROM gd_push_outbox WHERE status IN ('pending','retry') AND (next_attempt_at IS NULL OR next_attempt_at<=NOW()) ORDER BY created_at ASC LIMIT 20");
+  const jobs=await sql.query("WITH picked AS (SELECT id FROM gd_push_outbox WHERE status IN ('pending','retry') AND (next_attempt_at IS NULL OR next_attempt_at<=NOW()) ORDER BY created_at ASC LIMIT 20 FOR UPDATE SKIP LOCKED) UPDATE gd_push_outbox q SET status='processing' FROM picked WHERE q.id=picked.id RETURNING q.id,q.recipient_id,q.trip_id,q.title,q.body,q.attempts");
   let sent=0,failed=0,disabled=0;
   for(const job of jobs){
    const devices=await sql.query("SELECT token FROM gd_device_registrations WHERE owner_id=$1 AND platform='ios' AND enabled=TRUE",[job.recipient_id]);
