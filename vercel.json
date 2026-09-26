@@ -3,6 +3,10 @@
     {
       "path": "/api/reminders/two-hour",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/push-worker",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
