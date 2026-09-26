@@ -25,7 +25,7 @@ async function sendLine(to,message){
  const r=await fetch("https://api.line.me/v2/bot/message/push",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({to,messages:[{type:"text",text:message}]})});
  if(!r.ok)throw new Error("line_push_"+r.status);
 }
-export async function POST(req){
+async function run(req){
  const secret=process.env.CRON_SECRET;
  if(!secret||req.headers.get("authorization")!=="Bearer "+secret)return NextResponse.json({ok:false,error:"unauthorized"},{status:401});
  const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
@@ -43,3 +43,5 @@ export async function POST(req){
   return NextResponse.json({ok:true,checked:rows.length,sent,skipped,failed});
  }catch(e){console.error("two-hour reminders",e);return NextResponse.json({ok:false,error:"reminder_failed"},{status:500})}
 }
+export async function POST(req){return run(req)}
+export async function GET(req){return run(req)}
