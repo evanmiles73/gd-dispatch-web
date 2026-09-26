@@ -34,7 +34,8 @@ export async function PUT(req){
     if(currentStamp&&currentStamp!==t._baseUpdatedAt)return NextResponse.json({cloud:false,error:"conflict",id:String(t.id)},{status:409});
    }
    const payload={...t}; delete payload._baseUpdatedAt;
-   await sql.query("INSERT INTO gd_trips(id,payload,updated_at,owner_id) VALUES ($1,$2::jsonb,NOW(),$3) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,updated_at=NOW() WHERE gd_trips.owner_id=EXCLUDED.owner_id",[String(t.id),JSON.stringify(payload),owner]);
+   const saved=await sql.query("INSERT INTO gd_trips(id,payload,updated_at,owner_id) VALUES ($1,$2::jsonb,NOW(),$3) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,updated_at=NOW() WHERE gd_trips.owner_id=EXCLUDED.owner_id RETURNING id",[String(t.id),JSON.stringify(payload),owner]);
+   if(!saved.length)return NextResponse.json({cloud:false,error:"id_owned_by_another_account",id:String(t.id)},{status:409});
   }
   return NextResponse.json({cloud:true,count:trips.length});
  }catch(e){console.error("GD trips PUT failed",e);return NextResponse.json({cloud:false,error:"sync_failed"},{status:500})}
