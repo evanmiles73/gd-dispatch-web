@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import {NextResponse} from "next/server";
-import {getDb,ensureSchema} from "../../../../lib/db";
+import {getDb,ensureSchema} from "../../../../lib/db";\nimport {processPendingLineInbox} from "../../../../lib/line-inbox-processor";
 
 export const runtime="nodejs";
 
@@ -49,6 +49,6 @@ export async function POST(req){
     }
    }
   }
-  return NextResponse.json({ok:true});
+  try{await processPendingLineInbox(100)}catch(e){console.error("LINE silent auto process",e)}\n  return NextResponse.json({ok:true});
  }catch(e){console.error("LINE silent webhook",e);return NextResponse.json({ok:false,error:"webhook_failed"},{status:500})}
 }
