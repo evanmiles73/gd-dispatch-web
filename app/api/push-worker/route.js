@@ -6,6 +6,7 @@ async function run(){
  const sql=getDb();if(!sql)return {ok:false,error:"database_not_configured",status:503};
  try{
   await ensureSchema(sql);
+  await sql.query("UPDATE gd_push_outbox SET status='retry',next_attempt_at=NOW(),payload=payload||$1::jsonb WHERE status='processing' AND created_at<NOW()-INTERVAL '10 minutes'",[JSON.stringify({lastError:"stale_processing_recovered"})]);
   const jobs=await sql.query("WITH picked AS (SELECT id FROM gd_push_outbox WHERE status IN ('pending','retry') AND (next_attempt_at IS NULL OR next_attempt_at<=NOW()) ORDER BY created_at ASC LIMIT 20 FOR UPDATE SKIP LOCKED) UPDATE gd_push_outbox q SET status='processing' FROM picked WHERE q.id=picked.id RETURNING q.id,q.recipient_id,q.trip_id,q.title,q.body,q.attempts");
   let sent=0,failed=0,disabled=0;
   for(const job of jobs){
