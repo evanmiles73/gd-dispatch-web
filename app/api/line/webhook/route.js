@@ -2,6 +2,7 @@ import crypto from "crypto";
 import {NextResponse} from "next/server";
 import {getDb,ensureSchema} from "../../../../lib/db";
 import {processPendingLineInbox} from "../../../../lib/line-inbox-processor";
+import {runPushWorker} from "../../../../lib/push-worker";
 
 export const runtime="nodejs";
 
@@ -59,7 +60,7 @@ export async function POST(req){
     }
    }
   }
-  try{const result=await processPendingLineInbox(100);console.log("[GD LINE] inbox processed",result)}catch(e){console.error("LINE silent auto process",e)}
+  try{const result=await processPendingLineInbox(100);console.log("[GD LINE] inbox processed",result);if(result.queued>0){const push=await runPushWorker();console.log("[GD LINE] immediate push worker",push)}}catch(e){console.error("LINE silent auto process",e)}
   return NextResponse.json({ok:true});
  }catch(e){console.error("LINE silent webhook",e);return NextResponse.json({ok:false,error:"webhook_failed"},{status:500})}
 }
