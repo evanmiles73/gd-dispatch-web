@@ -35,7 +35,9 @@ async function run(req){
   const now=Date.now();let sent=0,skipped=0,failed=0;
   for(const row of rows){
    const p=row.payload||{},dt=tripDateTime(p);if(!dt){skipped++;continue}
-   const mins=(dt.getTime()-now)/60000;const configured=Number(p.driverReminderMinutes??p.reminderMinutes??120);const reminderMinutes=Number.isFinite(configured)?Math.max(15,Math.min(1440,configured)):120;const windowStart=Math.max(0,reminderMinutes-10),windowEnd=reminderMinutes+10;if(mins<windowStart||mins>windowEnd){skipped++;continue}
+   const mins=(dt.getTime()-now)/60000;
+   // The first driver reminder is mandatory at 2 hours. Custom reminder timing is handled separately after this first alert.
+   const reminderMinutes=120,windowStart=110,windowEnd=130;if(mins<windowStart||mins>windowEnd){skipped++;continue}
    const service=text(p.service)||"接送";
    const msg=["GD Car 行前提醒","11/"+service,"時間："+text(p.time),"出發："+text(p.pickup||p.pickupAddress||p.from||p.startAddress),"目的："+text(p.dropoff||p.dropoffAddress||p.to||p.destinationAddress),"特殊需求："+special(p)].join("\n");
    try{await sendLine(row.line_user_id,msg);await sql.query("INSERT INTO gd_reminder_log(owner_id,trip_id,reminder_type,channel,payload) VALUES($1,$2,'two_hour','line',$3::jsonb) ON CONFLICT DO NOTHING",[row.owner_id,row.id,JSON.stringify({message:msg,reminderMinutes})]);sent++}catch(e){failed++;console.error("two-hour LINE reminder",row.id,e)}
