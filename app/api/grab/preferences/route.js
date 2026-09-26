@@ -6,8 +6,10 @@ const arr=v=>Array.isArray(v)?v.map(x=>String(x).trim()).filter(Boolean).slice(0
 export async function GET(){
  const u=await user();if(!u?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});
  const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
- await ensureSchema(sql);const rows=await sql.query("SELECT enabled,regions,airports,min_amount,keywords FROM gd_grab_preferences WHERE owner_id=$1",[String(u.id)]);
- return NextResponse.json({ok:true,preferences:rows[0]||{enabled:true,regions:[],airports:[],min_amount:0,keywords:[]}});
+ try{
+  await ensureSchema(sql);const rows=await sql.query("SELECT enabled,regions,airports,min_amount,keywords FROM gd_grab_preferences WHERE owner_id=$1",[String(u.id)]);
+  return NextResponse.json({ok:true,preferences:rows[0]||{enabled:true,regions:[],airports:[],min_amount:0,keywords:[]}});
+ }catch(e){console.error("grab preferences GET",e);return NextResponse.json({ok:false,error:"load_failed"},{status:500})}
 }
 export async function PUT(req){
  const u=await user();if(!u?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});
