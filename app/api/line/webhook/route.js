@@ -46,7 +46,9 @@ export async function POST(req){
    if(event.type==="message"){
     await sql.query("INSERT INTO gd_line_groups(group_id,enabled,last_event_at) VALUES($1,true,NOW()) ON CONFLICT(group_id) DO UPDATE SET enabled=true,last_event_at=NOW(),updated_at=NOW()",[groupId]);
     if(event.message?.type==="text"){
-     await sql.query("INSERT INTO gd_line_inbox(source,payload) VALUES('line_group',$1::jsonb)",[JSON.stringify({mode:"silent",groupId,userId:source.userId||null,messageId:event.message.id||null,text:event.message.text||"",timestamp:event.timestamp||Date.now(),webhookEventId:event.webhookEventId||null})]);
+     const eventId=event.webhookEventId||event.message.id||null;
+     const duplicate=eventId?await sql.query("SELECT 1 FROM gd_line_inbox WHERE source='line_group' AND (payload->>'webhookEventId'=$1 OR payload->>'messageId'=$1) LIMIT 1",[String(eventId)]):[];
+     if(!duplicate.length)await sql.query("INSERT INTO gd_line_inbox(source,payload) VALUES('line_group',$1::jsonb)",[JSON.stringify({mode:"silent",groupId,userId:source.userId||null,messageId:event.message.id||null,text:event.message.text||"",timestamp:event.timestamp||Date.now(),webhookEventId:event.webhookEventId||null})]);
     }
    }
   }
