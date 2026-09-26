@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {getDb,ensureSchema} from "../../../lib/db";
+import {getDb,ensureSchema} from "../../../../lib/db";
 
 export const runtime="nodejs";
 
