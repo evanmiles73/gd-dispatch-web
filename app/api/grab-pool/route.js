@@ -6,6 +6,7 @@ async function userFrom(){const r=await auth.getSession();return r?.user||r?.dat
 const safeTrip=t=>({id:t.id,date:t.date,time:t.time,service:t.service,region:t.region,airport:t.airport,carClass:t.carClass||t.vehicle||"",amount:t.amount||"",pickupArea:t.region||"",dropoffArea:t.airport||"",luggage:t.luggage||"",carryOn:t.carryOn||"",childSeat:t.childSeat||0,booster:t.booster||0,notes:t.notes||""});
 
 export async function GET(){
+ const user=await userFrom();if(!user?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});
  const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
  try{await ensureSchema(sql);const rows=await sql.query("SELECT t.payload FROM gd_trips t LEFT JOIN gd_grab_claims c ON c.trip_id=t.id WHERE COALESCE((t.payload->>'grabPublished')::boolean,false)=true AND c.trip_id IS NULL AND COALESCE(t.payload->>'status','') NOT IN ('已接','已派','已完成') ORDER BY t.updated_at DESC LIMIT 100");return NextResponse.json({ok:true,trips:rows.map(r=>safeTrip(r.payload))})}catch(e){console.error("grab pool GET",e);return NextResponse.json({ok:false,error:"unavailable"},{status:503})}
 }
