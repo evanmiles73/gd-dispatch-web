@@ -52,13 +52,14 @@ export async function POST(req){
    if(event.type==="message"){
     await sql.query("INSERT INTO gd_line_groups(group_id,enabled,last_event_at) VALUES($1,true,NOW()) ON CONFLICT(group_id) DO UPDATE SET enabled=true,last_event_at=NOW(),updated_at=NOW()",[groupId]);
     if(event.message?.type==="text"){
+     console.log("[GD LINE] group text received",{groupId,messageId:event.message.id||null,text:String(event.message.text||"").slice(0,300)});
      const eventId=event.webhookEventId||event.message.id||null;
      const duplicate=eventId?await sql.query("SELECT 1 FROM gd_line_inbox WHERE source='line_group' AND (payload->>'webhookEventId'=$1 OR payload->>'messageId'=$1) LIMIT 1",[String(eventId)]):[];
      if(!duplicate.length)await sql.query("INSERT INTO gd_line_inbox(source,payload) VALUES('line_group',$1::jsonb)",[JSON.stringify({mode:"silent",groupId,userId:source.userId||null,messageId:event.message.id||null,text:event.message.text||"",timestamp:event.timestamp||Date.now(),webhookEventId:event.webhookEventId||null})]);
     }
    }
   }
-  try{await processPendingLineInbox(100)}catch(e){console.error("LINE silent auto process",e)}
+  try{const result=await processPendingLineInbox(100);console.log("[GD LINE] inbox processed",result)}catch(e){console.error("LINE silent auto process",e)}
   return NextResponse.json({ok:true});
  }catch(e){console.error("LINE silent webhook",e);return NextResponse.json({ok:false,error:"webhook_failed"},{status:500})}
 }
