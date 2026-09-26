@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {authClient} from "../lib/auth/client";
-const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",passengers:"",luggage:"",carryOn:"",vehicle:"",amount:"",notes:"",driver:"",driverPhone:"",payment:"未收",returnMoney:"待回金",returnAccount:"",region:"",carClass:"",service:"機場接送",childSeat:"0",booster:"0",airport:"",extraStops:"",extraKm:"",crossCounty:"否",reminder24h:"是",driverReminderMinutes:"120",driverLine:"",driverLineUserId:""};
+const empty={date:"",time:"",name:"",phone:"",pickup:"",dropoff:"",flight:"",passengers:"",luggage:"",carryOn:"",vehicle:"",amount:"",notes:"",driver:"",driverPhone:"",payment:"未收",returnMoney:"待回金",returnAccount:"",region:"",carClass:"",service:"接機",childSeat:"0",booster:"0",airport:"",extraStops:"",extraKm:"",crossCounty:"否",reminder24h:"是",driverReminderMinutes:"120",driverLine:"",driverLineUserId:""};
 const sizes=["32吋","30吋","28吋","26吋","24吋","22吋","20吋","18吋","16吋","胖胖箱"];
 const clean=(v="")=>v.replace(/^[：:\s]+|\s+$/g,"").trim();
 function match(t,rs){for(const r of rs){const m=t.match(r);if(m?.[1])return clean(m[1])}return ""}
