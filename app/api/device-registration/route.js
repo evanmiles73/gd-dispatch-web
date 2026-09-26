@@ -20,6 +20,21 @@ async function ensureDeviceSchema(sql){
   await sql.query("CREATE INDEX IF NOT EXISTS gd_device_registrations_owner_idx ON gd_device_registrations(owner_id)");
 }
 
+export async function GET(){
+  const user=await currentUser();
+  if(!user?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});
+  const sql=getDb();
+  if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
+  try{
+    await ensureDeviceSchema(sql);
+    const rows=await sql.query("SELECT platform,device_name,enabled,updated_at FROM gd_device_registrations WHERE owner_id=$1 ORDER BY updated_at DESC",[String(user.id)]);
+    return NextResponse.json({ok:true,ownerId:String(user.id),active:rows.filter(r=>r.enabled).length,devices:rows});
+  }catch(e){
+    console.error("device registration GET",e);
+    return NextResponse.json({ok:false,error:"device_status_failed"},{status:500});
+  }
+}
+
 export async function PUT(req){
   const user=await currentUser();
   if(!user?.id)return NextResponse.json({ok:false,error:"login_required"},{status:401});
