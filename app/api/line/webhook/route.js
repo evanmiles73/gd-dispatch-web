@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import {NextResponse} from "next/server";
-import {getDb,ensureSchema} from "../../../../lib/db";\nimport {processPendingLineInbox} from "../../../../lib/line-inbox-processor";
+import {getDb,ensureSchema} from "../../../../lib/db";
+import {processPendingLineInbox} from "../../../../lib/line-inbox-processor";
 
 export const runtime="nodejs";
 
