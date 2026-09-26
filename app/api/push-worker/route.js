@@ -10,7 +10,7 @@ async function run(){
   let sent=0,failed=0;
   for(const job of jobs){
    const devices=await sql.query("SELECT token FROM gd_device_registrations WHERE owner_id=$1 AND platform='ios' AND enabled=TRUE",[job.recipient_id]);
-   if(!devices.length){await sql.query("UPDATE gd_push_outbox SET status='no_device' WHERE id=$1",[job.id]);continue}
+   if(!devices.length){await sql.query("UPDATE gd_push_outbox SET status='no_device',next_attempt_at=NULL,payload=payload||$2::jsonb WHERE id=$1",[job.id,JSON.stringify({lastError:"no_active_ios_device"})]);continue}
    let delivered=false,lastError="send_failed";
    for(const d of devices){
     const result=await sendApns({token:d.token,title:job.title,body:job.body,tripId:job.trip_id});
