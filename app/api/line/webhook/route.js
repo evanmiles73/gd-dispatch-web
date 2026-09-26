@@ -27,10 +27,16 @@ export async function POST(req){
  const raw=await req.text();
  if(!validSignature(raw,req.headers.get("x-line-signature")))return NextResponse.json({ok:false,error:"invalid_signature"},{status:401});
  let body;try{body=JSON.parse(raw)}catch{return NextResponse.json({ok:false,error:"invalid_json"},{status:400})}
+
+ // LINE console verification sends a signed POST with an empty events array.
+ // Acknowledge it immediately; no database work is required for this ping.
+ const events=Array.isArray(body?.events)?body.events:[];
+ if(events.length===0)return NextResponse.json({ok:true},{status:200});
+
  const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
  try{
   await ensureSchema(sql);
-  for(const event of body.events||[]){
+  for(const event of events){
    const source=event?.source||{};
    if(source.type!=="group"||!source.groupId)continue;
    const groupId=String(source.groupId);
