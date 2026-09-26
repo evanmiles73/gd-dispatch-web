@@ -35,8 +35,9 @@ export async function POST(req){
   const tripRows=await sql.query("SELECT payload FROM gd_trips WHERE id=$1 AND owner_id=$2",[tripId,String(user.id)]);
   const trip=tripRows[0]?.payload||{};
   const claim=await sql.query("SELECT 1 FROM gd_grab_claims WHERE trip_id=$1 AND driver_id=$2",[tripId,recipientId]);
-  const assignedIds=[trip.driverId,trip.driverPhone,trip.driver,trip.driverLineUserId].filter(Boolean).map(String);
-  const isAssigned=claim.length>0||assignedIds.includes(recipientId);
+  const assignedIds=[trip.driverId,trip.driverPhone,trip.driver,trip.driverLineUserId].filter(Boolean).map(v=>String(v).trim()).filter(Boolean);
+  const normalizedRecipientId=recipientId.trim();
+  const isAssigned=claim.length>0||assignedIds.includes(normalizedRecipientId);
   if(!isAssigned)return NextResponse.json({ok:false,error:"recipient_not_assigned"},{status:409});
   const devices=await sql.query("SELECT token,platform FROM gd_device_registrations WHERE owner_id=$1 AND enabled=TRUE",[recipientId]);
   const existing=await sql.query("SELECT id,status FROM gd_push_outbox WHERE recipient_id=$1 AND trip_id=$2 AND event_type=$3 AND status IN ('pending','processing','retry','sent') ORDER BY created_at DESC LIMIT 1",[recipientId,tripId,eventType]);
