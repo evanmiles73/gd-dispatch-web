@@ -35,10 +35,12 @@ export async function POST(req){
   const claim=await sql.query("SELECT 1 FROM gd_grab_claims WHERE trip_id=$1 AND driver_id=$2",[tripId,recipientId]);
   if(!claim.length)return NextResponse.json({ok:false,error:"recipient_not_assigned"},{status:409});
   const devices=await sql.query("SELECT token,platform FROM gd_device_registrations WHERE owner_id=$1 AND enabled=TRUE",[recipientId]);
+  const existing=await sql.query("SELECT id,status FROM gd_push_outbox WHERE recipient_id=$1 AND trip_id=$2 AND event_type=$3 AND status IN ('pending','processing','retry','sent') ORDER BY created_at DESC LIMIT 1",[recipientId,tripId,eventType]);
+  if(existing.length)return NextResponse.json({ok:true,outboxId:existing[0].id,registeredDevices:devices.length,status:existing[0].status,deduplicated:true});
   const q=await sql.query(
    "INSERT INTO gd_push_outbox(recipient_id,trip_id,event_type,title,body,payload) VALUES($1,$2,$3,$4,$5,$6::jsonb) RETURNING id",
    [recipientId,tripId,eventType,title,body,JSON.stringify({tripId,eventType})]
   );
-  return NextResponse.json({ok:true,outboxId:q[0]?.id||null,registeredDevices:devices.length,status:"queued"});
+  return NextResponse.json({ok:true,outboxId:q[0]?.id||null,registeredDevices:devices.length,status:"queued",deduplicated:false});
  }catch(e){console.error("push queue POST",e);return NextResponse.json({ok:false,error:"queue_failed"},{status:500})}
 }
