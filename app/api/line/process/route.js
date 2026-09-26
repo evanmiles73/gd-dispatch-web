@@ -3,7 +3,8 @@ import {getDb,ensureSchema} from "../../../../lib/db";
 import {parseLineTrip,likelyTrip} from "../../../../lib/line-trip-parser";
 export const runtime="nodejs";
 export async function POST(req){
- if(process.env.CRON_SECRET&&req.headers.get("authorization")!=="Bearer "+process.env.CRON_SECRET)return NextResponse.json({ok:false,error:"unauthorized"},{status:401});
+ const secret=process.env.CRON_SECRET;
+ if(!secret||req.headers.get("authorization")!=="Bearer "+secret)return NextResponse.json({ok:false,error:"unauthorized"},{status:401});
  const sql=getDb();if(!sql)return NextResponse.json({ok:false,error:"database_not_configured"},{status:503});
  try{
   await ensureSchema(sql);const rows=await sql.query("SELECT id,payload FROM gd_line_inbox WHERE processed=false AND source='line_group' ORDER BY id ASC LIMIT 100");let matched=0,queued=0;
