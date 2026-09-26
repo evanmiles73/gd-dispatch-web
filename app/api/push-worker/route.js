@@ -14,6 +14,7 @@ async function run(){
    if(!devices.length){
     await sql.query("UPDATE gd_push_outbox SET status='no_device',next_attempt_at=NULL,payload=payload||$2::jsonb WHERE id=$1",[job.id,JSON.stringify({lastError:"no_active_ios_device"})]);
     await sql.query("INSERT INTO gd_system_alerts(owner_id,trip_id,alert_type,severity,message,payload) VALUES($1,$2,'push_no_device','critical',$3,$4::jsonb) ON CONFLICT DO NOTHING",[job.recipient_id,job.trip_id,"通知對象沒有可用的 iOS 推播裝置",JSON.stringify({outboxId:job.id,title:job.title})]);
+    const admins=await sql.query("SELECT owner_id FROM gd_admin_notification_bindings WHERE push_enabled=TRUE AND owner_id<>$1",[job.recipient_id]);for(const admin of admins){const recipient=String(admin.owner_id||"").trim();if(!recipient)continue;const eventType="critical_push_no_device";const dup=await sql.query("SELECT id FROM gd_push_outbox WHERE recipient_id=$1 AND trip_id IS NOT DISTINCT FROM $2 AND event_type=$3 AND payload->>'sourceOutboxId'=$4 AND status IN ('pending','processing','retry','sent') LIMIT 1",[recipient,job.trip_id,eventType,String(job.id)]);if(!dup.length)await sql.query("INSERT INTO gd_push_outbox(recipient_id,trip_id,event_type,title,body,payload) VALUES($1,$2,$3,$4,$5,$6::jsonb)",[recipient,job.trip_id,eventType,"GD Car 最高權限異常通知","通知對象沒有可用的 iOS 推播裝置｜"+job.title,JSON.stringify({sourceOutboxId:String(job.id),failedRecipient:job.recipient_id,lastError:"no_active_ios_device",severity:"critical"})]);}
     continue
    }
    let delivered=false,lastError="send_failed";
