@@ -11,7 +11,11 @@ async function run(){
   let sent=0,failed=0,disabled=0;
   for(const job of jobs){
    const devices=await sql.query("SELECT token FROM gd_device_registrations WHERE owner_id=$1 AND platform='ios' AND enabled=TRUE",[job.recipient_id]);
-   if(!devices.length){await sql.query("UPDATE gd_push_outbox SET status='no_device',next_attempt_at=NULL,payload=payload||$2::jsonb WHERE id=$1",[job.id,JSON.stringify({lastError:"no_active_ios_device"})]);continue}
+   if(!devices.length){
+    await sql.query("UPDATE gd_push_outbox SET status='no_device',next_attempt_at=NULL,payload=payload||$2::jsonb WHERE id=$1",[job.id,JSON.stringify({lastError:"no_active_ios_device"})]);
+    await sql.query("INSERT INTO gd_system_alerts(owner_id,trip_id,alert_type,severity,message,payload) VALUES($1,$2,'push_no_device','critical',$3,$4::jsonb) ON CONFLICT DO NOTHING",[job.recipient_id,job.trip_id,"通知對象沒有可用的 iOS 推播裝置",JSON.stringify({outboxId:job.id,title:job.title})]);
+    continue
+   }
    let delivered=false,lastError="send_failed";
    for(const d of devices){
     const result=await sendApns({token:d.token,title:job.title,body:job.body,tripId:job.trip_id});
@@ -19,6 +23,7 @@ async function run(){
    }
    const attempts=Number(job.attempts||0)+1;const state=delivered?"sent":attempts>=3?"failed":"retry";
    await sql.query("UPDATE gd_push_outbox SET status=$1,attempts=$2,next_attempt_at=CASE WHEN $1='retry' THEN NOW()+($3*INTERVAL '1 minute') ELSE NULL END,sent_at=CASE WHEN $1='sent' THEN NOW() ELSE sent_at END,payload=payload||$4::jsonb WHERE id=$5",[state,attempts,Math.min(30,attempts*5),JSON.stringify({lastError:delivered?null:lastError}),job.id]);
+   if(state==="failed")await sql.query("INSERT INTO gd_system_alerts(owner_id,trip_id,alert_type,severity,message,payload) VALUES($1,$2,'push_delivery_failed','critical',$3,$4::jsonb) ON CONFLICT DO NOTHING",[job.recipient_id,job.trip_id,"推播通知重試 3 次仍失敗",JSON.stringify({outboxId:job.id,lastError,title:job.title})]);
   }
   return {ok:true,processed:jobs.length,sent,failed,disabled,status:200};
  }catch(e){console.error("push worker",e);return {ok:false,error:"worker_failed",status:500}}
